@@ -1,0 +1,63 @@
+groups:
+  - name: rag_sli_alerts
+    interval: 30s
+    rules:
+      - alert: HighQueryLatency
+        expr: histogram_quantile(0.95, rate(rag_query_latency_seconds_bucket[5m])) > 2.0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RAG query p95 latency exceeds 2s SLA"
+          description: "p95 latency is {{ $value | humanizeDuration }}"
+
+      - alert: CriticalQueryLatency
+        expr: histogram_quantile(0.95, rate(rag_query_latency_seconds_bucket[5m])) > 5.0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RAG query latency critically high (>5s)"
+          description: "p95 latency is {{ $value | humanizeDuration }}"
+
+      - alert: HighErrorRate
+        expr: rate(rag_errors_total[5m]) / rate(rag_queries_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RAG error rate above 5%"
+          description: "Error rate: {{ $value | humanizePercentage }}"
+
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis cache is down"
+
+      - alert: APIDown
+        expr: up{job="rag-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RAG API is unreachable"
+
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on node"
+          description: "Available: {{ $value | humanize }}%"

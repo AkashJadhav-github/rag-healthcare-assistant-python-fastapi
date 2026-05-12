@@ -1,0 +1,90 @@
+COMMON DRUG INTERACTIONS REFERENCE — HEALTHCARE KNOWLEDGE BASE
+Synthetic Reference Document
+
+1. WARFARIN (Coumadin) INTERACTIONS
+
+Warfarin is a vitamin K antagonist anticoagulant with narrow therapeutic index (INR 2.0-3.0).
+Monitoring: INR must be checked regularly. Any new medication requires closer INR monitoring.
+
+INCREASES warfarin effect (elevated INR, bleeding risk):
+- Antibiotics: metronidazole, fluoroquinolones, macrolides (azithromycin, clarithromycin), fluconazole, trimethoprim-sulfamethoxazole
+- NSAIDs (all): increase bleeding risk by inhibiting platelet function AND some increase INR
+- Amiodarone: potent inhibitor of warfarin metabolism (CYP2C9); can increase INR dramatically
+- Statins: simvastatin, lovastatin, fluvastatin (CYP2C9 inhibition)
+- Omeprazole/PPIs: modest INR elevation
+- Thyroid hormone (levothyroxine): increases metabolism of clotting factors
+- SSRIs: serotonin-mediated platelet dysfunction; increased bleeding
+- Alcohol (acute): inhibits warfarin metabolism
+
+DECREASES warfarin effect (subtherapeutic INR, clot risk):
+- Rifampin: potent CYP inducer; dramatically reduces warfarin levels
+- Carbamazepine, phenytoin, phenobarbital: CYP inducers
+- St. John's Wort: herbal CYP inducer (counsel patients)
+- Vitamin K-rich foods (kale, spinach, broccoli): counsel on dietary consistency
+- Cholestyramine: reduces absorption
+
+2. ACE INHIBITORS / ANGIOTENSIN RECEPTOR BLOCKERS (ARBs) INTERACTIONS
+
+ACEi + ARB + direct renin inhibitor: TRIPLE BLOCKADE — contraindicated (hypotension, AKI, hyperkalemia)
+
+HYPERKALEMIA combinations (monitor potassium):
+- ACEi/ARB + potassium-sparing diuretics (spironolactone, amiloride, triamterene)
+- ACEi/ARB + potassium supplements
+- ACEi/ARB + NSAIDs (also reduces antihypertensive effect and causes AKI)
+- ACEi/ARB + trimethoprim (acts as potassium-sparing agent)
+
+HYPOTENSION combinations:
+- ACEi/ARB + diuretics (especially volume-depleted patients)
+- ACEi/ARB + alpha-blockers, PDE-5 inhibitors (sildenafil)
+- ACEi initiation: first-dose effect more pronounced if patient on diuretics
+
+3. STATINS (HMG-CoA REDUCTASE INHIBITORS)
+
+MYOPATHY RISK — increases with these combinations:
+- Simvastatin/lovastatin + strong CYP3A4 inhibitors: clarithromycin, itraconazole, HIV protease inhibitors → rhabdomyolysis risk → avoid or use alternative statin
+- Simvastatin ≤10mg if combined with amiodarone, amlodipine, ranolazine
+- All statins + fibrates (especially gemfibrozil): myopathy risk; use fenofibrate if needed
+- Statins + cyclosporine: avoid simvastatin/lovastatin (use rosuvastatin at low dose)
+- Statins + niacin: myopathy risk (high-dose niacin)
+
+NOTE: Rosuvastatin and pravastatin have fewer CYP3A4 interactions (safer with macrolides, azole antifungals).
+
+4. METFORMIN INTERACTIONS
+
+- IV iodinated contrast: hold metformin 48h before and after contrast in at-risk patients (eGFR <60 or IV contrast bolus) — risk of contrast-induced nephropathy → lactic acidosis
+- Alcohol: increased lactic acidosis risk
+- Cimetidine: increases metformin levels (reduce dose)
+- Topiramate, zonisamide: may precipitate lactic acidosis (carbonic anhydrase inhibition)
+
+5. ANTIBIOTICS — KEY INTERACTIONS
+
+Fluoroquinolones (ciprofloxacin, levofloxacin):
+- Warfarin: increased INR
+- Antacids/calcium/iron: chelation reduces absorption (take 2h apart)
+- QT prolongation: avoid with other QT-prolonging drugs (antipsychotics, class III antiarrhythmics, macrolides)
+
+Macrolides (azithromycin, clarithromycin):
+- QT prolongation: azithromycin has moderate QT effect; avoid in long QT syndrome
+- Clarithromycin is a potent CYP3A4 inhibitor → statins, warfarin, benzodiazepines, calcium channel blockers
+
+Metronidazole:
+- Alcohol: disulfiram-like reaction (flushing, nausea, vomiting) — avoid alcohol during and 48h after
+- Warfarin: significant INR elevation
+
+6. COMMON QT-PROLONGING DRUG COMBINATIONS (AVOID)
+
+High-risk combinations:
+- Antipsychotics (haloperidol, quetiapine, ziprasidone) + macrolides/fluoroquinolones
+- Methadone + any QT-prolonging drug
+- Class IA antiarrhythmics (quinidine, procainamide) + Class III (amiodarone, sotalol)
+- Citalopram/escitalopram at high doses + other QT-prolonging agents
+
+Check resources: CredibleMeds.org (QTDrugs list)
+
+7. OPIOIDS
+
+- Opioids + benzodiazepines: FDA black-box warning; respiratory depression, death
+- Opioids + CNS depressants (alcohol, muscle relaxants, gabapentinoids): additive CNS/respiratory depression
+- Tramadol + SSRIs/MAOIs: serotonin syndrome risk; lower seizure threshold
+
+References: Clinical Pharmacology database; Lexi-Interact; Drugs.com interactions checker (synthetic educational content).

@@ -1,0 +1,78 @@
+HYPERTENSION CLINICAL PRACTICE GUIDELINES 2024
+ACC/AHA Joint Guidelines — Synthetic Reference Document
+
+1. DEFINITION AND CLASSIFICATION
+
+Blood pressure (BP) categories for adults (≥18 years):
+- Normal: Systolic <120 mmHg AND Diastolic <80 mmHg
+- Elevated: Systolic 120-129 mmHg AND Diastolic <80 mmHg
+- Stage 1 Hypertension (HTN): Systolic 130-139 mmHg OR Diastolic 80-89 mmHg
+- Stage 2 Hypertension: Systolic ≥140 mmHg OR Diastolic ≥90 mmHg
+- Hypertensive Crisis: Systolic >180 mmHg AND/OR Diastolic >120 mmHg
+
+2. DIAGNOSIS
+
+Diagnosis requires confirmation on ≥2 occasions. Use validated, calibrated devices.
+Ambulatory Blood Pressure Monitoring (ABPM) is the gold standard for confirming white-coat hypertension.
+
+3. CARDIOVASCULAR RISK ASSESSMENT
+
+Use the Pooled Cohort Equations to estimate 10-year ASCVD risk:
+- Low risk (<10%): lifestyle modification first
+- High risk (≥10%): pharmacotherapy with lifestyle modification
+
+4. TREATMENT
+
+4.1 Lifestyle Modifications (ALL stages)
+- Weight reduction: 1 mmHg per 1 kg body weight lost
+- DASH diet: reduces BP 8-14 mmHg
+- Sodium restriction (<1500 mg/day): reduces BP 5-6 mmHg
+- Physical activity (150 min/week moderate aerobic): reduces BP 4-9 mmHg
+- Limit alcohol: men ≤2 drinks/day, women ≤1 drink/day
+- Smoking cessation: reduces overall cardiovascular risk
+
+4.2 Pharmacotherapy
+
+First-line agents (evidence A):
+1. Thiazide or thiazide-like diuretics (chlorthalidone preferred over HCTZ)
+2. ACE inhibitors (ACEi) — e.g., lisinopril, enalapril
+3. Angiotensin Receptor Blockers (ARBs) — e.g., losartan, valsartan
+4. Calcium Channel Blockers (CCBs) — dihydropyridine e.g., amlodipine
+
+Special populations:
+- CKD with proteinuria: ACEi or ARB preferred (renoprotective)
+- Diabetes: ACEi or ARB preferred
+- Heart failure with reduced EF (HFrEF): ACEi/ARB + beta-blocker + MRA
+- Post-MI: beta-blocker + ACEi/ARB
+- Black patients (without CKD/HF): thiazide or CCB preferred
+- Pregnancy: methyldopa, labetalol, nifedipine (ACEi/ARB CONTRAINDICATED)
+
+Compelling indications for specific drug classes:
+- Coronary artery disease (CAD): beta-blockers, ACEi
+- Atrial fibrillation (rate control): beta-blockers, non-dihydropyridine CCBs
+- Resistant hypertension: add spironolactone (if eGFR adequate)
+
+4.3 BP Targets
+- General adults: <130/80 mmHg
+- Adults with CKD: <130/80 mmHg
+- Adults ≥65 years (community-dwelling): <130 mmHg systolic
+- Pregnant: 120-160/80-105 mmHg
+
+5. MONITORING
+
+After initiating therapy: reassess in 1 month.
+At goal: every 3-6 months.
+Monitor: serum electrolytes, creatinine/eGFR with ACEi/ARB initiation.
+
+6. HYPERTENSIVE URGENCY vs EMERGENCY
+
+Urgency: BP >180/120 mmHg, no target organ damage — oral agents, reduce over 24-48h
+Emergency: BP >180/120 mmHg WITH target organ damage (hypertensive encephalopathy, ACS,
+pulmonary edema, eclampsia) — IV agents, reduce MAP by max 25% in first hour.
+
+7. SECONDARY HYPERTENSION
+
+Suspect if: age <30, resistant to ≥3 agents, associated symptoms.
+Causes: primary hyperaldosteronism, renovascular disease, pheochromocytoma, obstructive sleep apnea, thyroid disease.
+
+References: 2017 ACC/AHA/AAPA/ABC/ACPM/AGS/APhA/ASH/ASPC/NMA/PCNA Guidelines, updated 2024.

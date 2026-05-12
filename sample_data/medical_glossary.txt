@@ -1,0 +1,80 @@
+MEDICAL TERMINOLOGY GLOSSARY — HEALTHCARE KNOWLEDGE BASE
+Synthetic Reference Document
+
+CARDIOVASCULAR
+
+Angina Pectoris: Chest pain caused by reduced blood flow to the heart muscle, typically due to coronary artery disease.
+Arrhythmia: Irregular heart rhythm including tachycardia (fast), bradycardia (slow), or fibrillation.
+Atrial Fibrillation (AF/A-fib): Irregular, often rapid heart rate where upper chambers quiver instead of contract.
+Cardiac Output (CO): Volume of blood pumped by the heart per minute. CO = Stroke Volume × Heart Rate. Normal: 4-8 L/min.
+Cardiomegaly: Enlargement of the heart, often secondary to hypertension, valvular disease, or cardiomyopathy.
+Congestive Heart Failure (CHF): Inability of the heart to pump blood adequately; may involve fluid accumulation.
+Coronary Artery Disease (CAD): Narrowing of coronary arteries due to atherosclerosis.
+Dyslipidemia: Abnormal lipid levels (cholesterol, triglycerides) in blood; major risk factor for atherosclerosis.
+Ejection Fraction (EF): Percentage of blood ejected from the left ventricle with each contraction. Normal: 55-70%.
+Hypertension (HTN): Persistently elevated blood pressure ≥130/80 mmHg.
+Myocardial Infarction (MI): Heart attack — death of heart muscle due to prolonged ischemia.
+Pericarditis: Inflammation of the pericardial sac surrounding the heart.
+Stenosis: Narrowing of a valve or vessel opening.
+ST-Elevation MI (STEMI): MI with ST elevation on ECG indicating complete coronary artery occlusion; emergency reperfusion required.
+Troponin: Cardiac biomarker released when myocardial cells are damaged. I and T forms are cardiac-specific.
+
+PULMONARY
+
+Asthma: Reversible airway obstruction from bronchoconstriction, often allergic trigger.
+Bronchitis: Inflammation of bronchial tubes; acute (viral/bacterial) vs chronic (≥3 months/year for 2 consecutive years).
+COPD: Chronic Obstructive Pulmonary Disease — irreversible airflow limitation; includes emphysema and chronic bronchitis.
+FEV1: Forced Expiratory Volume in 1 second — key spirometry measurement.
+FEV1/FVC ratio: Diagnostic for obstructive lung disease when <70%.
+Hypoxemia: Abnormally low oxygen in blood (PaO2 <80 mmHg).
+Hypoxia: Insufficient oxygen delivery to tissues.
+Pleural Effusion: Abnormal fluid accumulation in pleural space.
+Pneumonia: Infection/inflammation of lung parenchyma.
+Pulmonary Embolism (PE): Blood clot in pulmonary arteries; can be life-threatening.
+SpO2: Peripheral capillary oxygen saturation measured by pulse oximetry. Normal ≥95%.
+
+ENDOCRINE/METABOLIC
+
+Diabetic Ketoacidosis (DKA): Acute complication of DM, mainly T1DM; hyperglycemia + ketosis + acidosis.
+Hyperglycemia: Elevated blood glucose >180 mg/dL (10 mmol/L).
+Hypoglycemia: Blood glucose <70 mg/dL (3.9 mmol/L); severe if altered consciousness.
+HbA1c (Glycated Hemoglobin): Reflects average blood glucose over 2-3 months. Target <7% for most T2DM patients.
+Insulin Resistance: Reduced cellular response to insulin, key pathophysiology in T2DM.
+Metabolic Syndrome: Cluster of conditions: central obesity, hypertension, hyperglycemia, dyslipidemia.
+Thyroid-Stimulating Hormone (TSH): Pituitary hormone that stimulates thyroid; primary screening test for thyroid disease.
+
+RENAL/UROLOGICAL
+
+Acute Kidney Injury (AKI): Sudden decrease in kidney function; defined by rise in creatinine or fall in urine output.
+BUN (Blood Urea Nitrogen): Marker of kidney function and protein catabolism. Normal: 7-20 mg/dL.
+Chronic Kidney Disease (CKD): Progressive loss of kidney function; staged by eGFR and albuminuria.
+Creatinine: Waste product of muscle metabolism; elevated in kidney disease.
+eGFR: Estimated Glomerular Filtration Rate; assesses kidney filtration capacity.
+Hemodialysis: Renal replacement therapy removing waste and excess fluid via external blood purification.
+Proteinuria/Albuminuria: Protein in urine indicating kidney damage. UACR >30 mg/g is significant.
+
+NEUROLOGICAL
+
+Cerebrovascular Accident (CVA)/Stroke: Brain injury from interrupted blood supply (ischemic) or bleeding (hemorrhagic).
+Delirium: Acute confusional state with fluctuating consciousness, attention deficit; often reversible.
+Dementia: Chronic progressive cognitive decline interfering with daily function.
+Glasgow Coma Scale (GCS): Assessment of consciousness: Eye (1-4) + Verbal (1-5) + Motor (1-6). Total 3-15.
+Meningitis: Inflammation of meninges; bacterial is medical emergency.
+Neuropathy: Peripheral nerve damage; diabetic peripheral neuropathy most common in DM.
+Transient Ischemic Attack (TIA): Brief neurological deficits from temporary brain ischemia; "mini-stroke"; resolves <24h.
+
+INFECTIOUS DISEASE
+
+Bacteremia: Presence of bacteria in bloodstream.
+Sepsis: Life-threatening organ dysfunction from infection. Sepsis-3: SOFA score ≥2 with suspected infection.
+Septic Shock: Sepsis with vasopressor requirement and lactate >2 mmol/L despite fluid resuscitation.
+MRSA: Methicillin-Resistant Staphylococcus aureus — requires vancomycin or daptomycin.
+C. difficile: Clostridioides difficile colitis — antibiotic-associated diarrhea; treat with vancomycin or fidaxomicin (oral).
+
+ABBREVIATIONS KEY
+
+ABG: Arterial Blood Gas | BMI: Body Mass Index | CBC: Complete Blood Count | CXR: Chest X-ray
+ECG/EKG: Electrocardiogram | ED: Emergency Department | ICU: Intensive Care Unit
+IV: Intravenous | LFTs: Liver Function Tests | O2: Oxygen | PO: By mouth (per os)
+PRN: As needed (pro re nata) | RBC: Red Blood Cell | SBP: Systolic Blood Pressure
+SOB: Shortness of Breath | WBC: White Blood Cell | Rx: Prescription/Treatment

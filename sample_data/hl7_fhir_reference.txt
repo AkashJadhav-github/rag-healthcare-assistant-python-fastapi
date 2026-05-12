@@ -1,0 +1,105 @@
+HL7 FHIR R4 QUICK REFERENCE — HEALTHCARE KNOWLEDGE BASE
+Synthetic Reference Document
+
+1. OVERVIEW
+
+HL7 FHIR (Fast Healthcare Interoperability Resources) Release 4 (R4) is the current normative standard
+for healthcare data exchange. FHIR is based on RESTful APIs, JSON/XML resources, and modern web standards.
+
+2. CORE RESOURCES
+
+Patient Resource:
+- resourceType: "Patient"
+- id: server-assigned logical identifier
+- identifier: patient medical record numbers, SSN (use system + value)
+- name: HumanName (family, given, prefix)
+- birthDate: YYYY-MM-DD format
+- gender: male | female | other | unknown
+- address, telecom, communication (language preferences)
+- managingOrganization: reference to Organization resource
+
+Observation Resource:
+- Used for clinical measurements, lab results, vital signs
+- status: registered | preliminary | final | amended
+- category: vital-signs | laboratory | imaging
+- code: LOINC code (preferred) for the observation type
+- value: valueQuantity (numeric), valueCodeableConcept, valueString
+- effectiveDateTime or effectivePeriod
+- subject: Reference(Patient)
+- performer: Reference(Practitioner | Organization)
+
+Condition Resource:
+- Clinical diagnosis and problems
+- clinicalStatus: active | recurrence | relapse | inactive | remission | resolved
+- verificationStatus: unconfirmed | provisional | differential | confirmed | refuted
+- code: SNOMED CT or ICD-10 code
+- subject: Reference(Patient)
+- onsetDateTime, abatementDateTime
+- severity: mild | moderate | severe
+
+MedicationRequest Resource:
+- Prescriptions and medication orders
+- status: active | on-hold | cancelled | completed
+- intent: proposal | plan | order | original-order
+- medication: RXNORM code preferred
+- subject: Reference(Patient)
+- authoredOn, requester
+- dosageInstruction: dose, frequency, route
+- dispenseRequest: quantity, numberOfRepeatsAllowed
+
+Encounter Resource:
+- Patient encounter/visit record
+- status: planned | in-progress | finished | cancelled
+- class: inpatient | outpatient | emergency | ambulatory
+- type: SNOMED or CPT codes
+- subject, participant (practitioners), period, location
+
+DiagnosticReport Resource:
+- Results and interpretations (labs, imaging, pathology)
+- status: registered | partial | preliminary | final
+- code: LOINC
+- subject, performer, result (array of Observation references)
+- conclusion, presentedForm (PDF/binary)
+
+3. FHIR REST API
+
+Base URL pattern: [base]/[resourceType]/[id]
+
+Operations:
+- GET    [base]/Patient/[id]           → Read
+- GET    [base]/Patient?name=Smith     → Search
+- POST   [base]/Patient                → Create
+- PUT    [base]/Patient/[id]           → Update
+- DELETE [base]/Patient/[id]           → Delete
+- GET    [base]/Patient/[id]/_history  → Version history
+
+Search parameters:
+- Patient: _id, name, birthdate, identifier, gender, address
+- Observation: patient, code, date, status, category
+- Condition: patient, code, clinical-status, onset-date
+
+Bundle resource: container for multiple resources; types: searchset, transaction, batch, history
+
+4. TERMINOLOGIES
+
+LOINC: Lab and clinical observation codes (e.g., 8867-4 = Heart Rate)
+SNOMED CT: Clinical terms for conditions, procedures, findings
+RxNorm: Drug codes for medications
+ICD-10-CM: Diagnosis codes (billing and clinical)
+CPT: Procedure codes
+
+5. SECURITY
+
+OAuth 2.0 / SMART on FHIR for authorization
+TLS 1.2+ for all transmissions
+Audit logging via AuditEvent resource
+Patient consent via Consent resource
+
+6. US CORE PROFILES
+
+US Core profiles constrain FHIR resources for US regulatory compliance (§170.315(g)(10)):
+- US Core Patient must include: name, birthDate, gender, identifier
+- US Core Vital Signs uses specific LOINC codes
+- Must support CapabilityStatement, SMART launch sequence
+
+References: HL7 FHIR R4 specification (hl7.org/fhir/R4/); US Core Implementation Guide v6.1.0

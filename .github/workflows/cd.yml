@@ -1,0 +1,90 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/rag-healthcare-api:$IMAGE_TAG ./backend
+          docker push $ECR_REGISTRY/rag-healthcare-api:$IMAGE_TAG
+          docker tag $ECR_REGISTRY/rag-healthcare-api:$IMAGE_TAG $ECR_REGISTRY/rag-healthcare-api:staging-latest
+          docker push $ECR_REGISTRY/rag-healthcare-api:staging-latest
+
+      - name: Deploy to EKS (Staging)
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+          CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME_STAGING }}
+        run: |
+          aws eks update-kubeconfig --name $CLUSTER_NAME --region ${{ secrets.AWS_REGION }}
+          kubectl set image deployment/rag-api rag-api=$ECR_REGISTRY/rag-healthcare-api:$IMAGE_TAG -n healthcare-rag
+          kubectl rollout status deployment/rag-api -n healthcare-rag --timeout=300s
+
+      - name: Run smoke tests against staging
+        run: |
+          sleep 15
+          curl -f ${{ secrets.STAGING_URL }}/api/v1/health/live
+          curl -f ${{ secrets.STAGING_URL }}/api/v1/health/ready
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production
+    needs: [deploy-staging]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Deploy to EKS (Production)
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.ref_name }}
+          CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME_PROD }}
+        run: |
+          aws eks update-kubeconfig --name $CLUSTER_NAME --region ${{ secrets.AWS_REGION }}
+          kubectl set image deployment/rag-api rag-api=$ECR_REGISTRY/rag-healthcare-api:$IMAGE_TAG -n healthcare-rag
+          kubectl rollout status deployment/rag-api -n healthcare-rag --timeout=600s
+
+      - name: Notify on failure (rollback)
+        if: failure()
+        env:
+          CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME_PROD }}
+        run: |
+          aws eks update-kubeconfig --name $CLUSTER_NAME --region ${{ secrets.AWS_REGION }}
+          kubectl rollout undo deployment/rag-api -n healthcare-rag
+          echo "::error::Production deployment failed — rolled back to previous version"

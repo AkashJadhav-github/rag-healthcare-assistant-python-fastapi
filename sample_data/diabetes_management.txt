@@ -1,0 +1,92 @@
+DIABETES MELLITUS MANAGEMENT PROTOCOL — ADA STANDARDS OF CARE 2024
+Synthetic Reference Document for Healthcare Knowledge Base
+
+1. DIAGNOSIS
+
+Type 2 Diabetes Mellitus (T2DM) diagnostic criteria (any one):
+- Fasting plasma glucose (FPG) ≥126 mg/dL (after ≥8h fast)
+- 2-hour plasma glucose ≥200 mg/dL during 75g OGTT
+- HbA1c ≥6.5%
+- Random plasma glucose ≥200 mg/dL with symptoms
+
+Prediabetes:
+- Impaired fasting glucose: FPG 100-125 mg/dL
+- Impaired glucose tolerance: 2h glucose 140-199 mg/dL
+- HbA1c 5.7-6.4%
+
+2. GLYCEMIC TARGETS
+
+For most non-pregnant adults with T2DM:
+- HbA1c: <7.0%
+- Fasting glucose: 80-130 mg/dL
+- Postprandial (2h): <180 mg/dL
+
+Less stringent (HbA1c <8%): elderly, limited life expectancy, hypoglycemia unawareness, long-standing DM with poor control.
+More stringent (HbA1c <6.5%): younger patients, short duration, no CVD, no significant hypoglycemia.
+
+3. PHARMACOTHERAPY
+
+3.1 First-line: Metformin
+- Start: 500 mg once daily with meals, titrate to 1000 mg BID
+- Mechanism: reduces hepatic glucose production (AMPK activation)
+- Contraindications: eGFR <30 mL/min/1.73m², IV contrast (hold 48h), hepatic impairment
+- Caution: eGFR 30-45 (reduce dose), increased lactic acidosis risk
+- Benefits: weight neutral/modest loss, low hypoglycemia risk, low cost, CV neutral/benefit
+- GI side effects: nausea, diarrhea (use extended-release to mitigate)
+- Vitamin B12 deficiency: monitor periodically
+
+3.2 Second-line Agents (add to metformin or use if metformin contraindicated)
+
+GLP-1 Receptor Agonists (GLP-1 RAs):
+- Agents: semaglutide (Ozempic), liraglutide (Victoza), dulaglutide (Trulicity), exenatide
+- Benefits: significant HbA1c reduction, weight loss (3-5 kg), CV benefit (ASCVD, HF)
+- Side effects: nausea, vomiting, diarrhea (transient), pancreatitis risk (rare)
+- Contraindicated: personal/family history of MEN2 or medullary thyroid carcinoma
+- Preferred in: obesity, established CVD or high CV risk
+
+SGLT-2 Inhibitors:
+- Agents: empagliflozin (Jardiance), dapagliflozin (Farxiga), canagliflozin (Invokana)
+- Benefits: HbA1c reduction, weight loss (2-3 kg), BP reduction, heart failure benefit, CKD protection
+- Side effects: genital mycotic infections, DKA (euglycemic), volume depletion, Fournier gangrene (rare)
+- Preferred in: HFrEF, CKD (eGFR ≥20), established CVD
+
+DPP-4 Inhibitors:
+- Agents: sitagliptin (Januvia), saxagliptin (Onglyza), linagliptin (Tradjenta)
+- Benefits: modest HbA1c reduction, weight neutral, low hypoglycemia
+- Caution: saxagliptin associated with HF hospitalization
+- Well tolerated; useful in elderly
+
+Sulfonylureas:
+- Agents: glipizide, glimepiride, glyburide
+- Benefits: effective, inexpensive
+- Risks: hypoglycemia (highest risk among oral agents), weight gain
+- Avoid glyburide in elderly (long half-life)
+
+Insulin (when oral agents insufficient):
+- Start with basal insulin: glargine (Lantus/Basaglar), detemir (Levemir), degludec (Tresiba)
+- Starting dose: 10 units or 0.1-0.2 units/kg/day
+- Titrate: increase by 2 units every 3 days if FPG >130 mg/dL
+- Add prandial (bolus) insulin if HbA1c remains elevated despite adequate basal
+
+4. COMPLICATIONS SCREENING
+
+Annual:
+- Nephropathy: urine albumin-to-creatinine ratio (UACR), eGFR
+- Retinopathy: dilated funduscopic exam
+- Neuropathy: monofilament test, vibration, ankle reflexes
+
+Annual (established CVD) or q2y otherwise:
+- Lipid panel, TSH (T1DM/T2DM)
+
+5. HYPOGLYCEMIA MANAGEMENT
+
+Mild-moderate (conscious): 15g fast-acting carbohydrates, recheck in 15 min (15-15 rule)
+Severe (altered consciousness): glucagon 0.5-1 mg IM/SC/IN or IV dextrose
+
+6. CARDIOVASCULAR RISK REDUCTION
+
+Statin therapy: ALL T2DM patients 40-75 years → high-intensity statin
+Aspirin: only if established ASCVD (10-year risk benefit outweighs bleeding risk)
+ACE inhibitor/ARB: if proteinuria, hypertension, or CKD
+
+References: ADA Standards of Medical Care in Diabetes 2024. Diabetes Care 47 (Supplement 1).
