@@ -1,18 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, text
-from pydantic import BaseModel
 from typing import Optional
-import structlog
 
-from ...db.database import get_db
-from ...models.user import User, UserRole
-from ...models.document import Document, DocumentStatus, DocumentChunk
-from ...models.audit import AuditLog, AuditAction
+import structlog
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from ...core.rbac import Permission
 from ...core.security import hash_password
-from ..deps import require_permission, get_client_ip
+from ...db.database import get_db
+from ...models.audit import AuditAction, AuditLog
+from ...models.document import Document, DocumentChunk, DocumentStatus
+from ...models.user import User, UserRole
 from ...services.metrics import documents_indexed, vector_store_size
+from ..deps import get_client_ip, require_permission
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -69,7 +70,7 @@ async def reindex_documents(
         docs_to_reindex = [doc]
     else:
         result = await db.execute(
-            select(Document).where(Document.status == DocumentStatus.INDEXED, Document.is_active == True)
+            select(Document).where(Document.status == DocumentStatus.INDEXED, Document.is_active)
         )
         docs_to_reindex = result.scalars().all()
 
@@ -102,6 +103,7 @@ async def create_user(
     current_user: User = Depends(require_permission(Permission.MANAGE_USERS)),
 ):
     from ...core.security import validate_password_strength
+
     if not validate_password_strength(payload.password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -146,14 +148,12 @@ async def get_stats(
     from ...models.query import QueryLog
 
     total_docs = (await db.execute(select(func.count(Document.id)))).scalar_one()
-    indexed_docs = (await db.execute(
-        select(func.count(Document.id)).where(Document.status == DocumentStatus.INDEXED)
-    )).scalar_one()
+    indexed_docs = (
+        await db.execute(select(func.count(Document.id)).where(Document.status == DocumentStatus.INDEXED))
+    ).scalar_one()
     total_chunks = (await db.execute(select(func.count(DocumentChunk.id)))).scalar_one()
     total_queries = (await db.execute(select(func.count(QueryLog.id)))).scalar_one()
-    active_user_count = (await db.execute(
-        select(func.count(User.id)).where(User.is_active == True)
-    )).scalar_one()
+    active_user_count = (await db.execute(select(func.count(User.id)).where(User.is_active))).scalar_one()
 
     documents_indexed.set(indexed_docs)
     vector_store_size.set(total_chunks)
@@ -168,8 +168,8 @@ async def get_stats(
 
 
 async def _run_reindex(doc_ids: list[str]) -> None:
-    from rag.ingestion import DocumentIngestionService
     from app.db.database import AsyncSessionLocal
+    from rag.ingestion import DocumentIngestionService
 
     async with AsyncSessionLocal() as db:
         ingestion = DocumentIngestionService()

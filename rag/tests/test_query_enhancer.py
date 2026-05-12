@@ -1,4 +1,5 @@
 import pytest
+
 from rag.query_enhancer import MedicalQueryEnhancer
 
 

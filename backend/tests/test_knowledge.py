@@ -1,8 +1,8 @@
-import pytest
 import io
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from httpx import AsyncClient
-from unittest.mock import AsyncMock, patch, MagicMock
-from app.models.user import User
 
 
 @pytest.mark.asyncio
@@ -25,23 +25,25 @@ async def test_ask_too_short_query(client: AsyncClient, clinician_token: str):
 @patch("app.api.v1.knowledge.RAGPipeline")
 async def test_ask_success(mock_pipeline_class, client: AsyncClient, clinician_token: str):
     mock_pipeline = MagicMock()
-    mock_pipeline.query = AsyncMock(return_value={
-        "answer": "Hypertension is elevated blood pressure above 130/80 mmHg.",
-        "sources": [
-            {
-                "chunk_id": "abc123",
-                "document_id": "doc001",
-                "document_title": "ADA Guidelines 2024",
-                "chunk_content": "Hypertension is defined as...",
-                "similarity_score": 0.92,
-                "page_number": 5,
-                "section": "Diagnosis",
-            }
-        ],
-        "confidence_score": 0.88,
-        "model_used": "gpt-4-turbo-preview",
-        "latency_ms": 1200,
-    })
+    mock_pipeline.query = AsyncMock(
+        return_value={
+            "answer": "Hypertension is elevated blood pressure above 130/80 mmHg.",
+            "sources": [
+                {
+                    "chunk_id": "abc123",
+                    "document_id": "doc001",
+                    "document_title": "ADA Guidelines 2024",
+                    "chunk_content": "Hypertension is defined as...",
+                    "similarity_score": 0.92,
+                    "page_number": 5,
+                    "section": "Diagnosis",
+                }
+            ],
+            "confidence_score": 0.88,
+            "model_used": "gpt-4-turbo-preview",
+            "latency_ms": 1200,
+        }
+    )
     mock_pipeline_class.return_value = mock_pipeline
 
     response = await client.post(
@@ -76,9 +78,6 @@ async def test_get_history_empty(client: AsyncClient, clinician_token: str):
 @pytest.mark.asyncio
 async def test_ingest_requires_permission(client: AsyncClient, admin_token: str):
     """Test that a viewer cannot ingest documents (only clinician+)."""
-    from app.core.security import create_access_token
-    from app.models.user import UserRole
-    import uuid
 
     response = await client.post(
         "/api/v1/knowledge/ingest",

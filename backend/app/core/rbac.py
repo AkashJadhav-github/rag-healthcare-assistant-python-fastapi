@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Set
+
 from fastapi import HTTPException, status
+
 from ..models.user import UserRole
 
 
@@ -52,10 +54,12 @@ def has_permission(role: UserRole, permission: Permission) -> bool:
 
 def require_permission(permission: Permission):
     """Dependency factory for endpoint-level permission checks."""
+
     def check(current_user) -> None:
         if not has_permission(current_user.role, permission):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Permission denied: {permission.value} requires higher role",
             )
+
     return check

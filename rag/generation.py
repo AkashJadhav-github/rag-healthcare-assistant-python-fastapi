@@ -2,10 +2,13 @@
 LLM generation with healthcare-specific prompt engineering.
 Supports OpenAI GPT-4 and Anthropic Claude with few-shot examples.
 """
+
+import os
+import sys
 import time
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List
+
 import structlog
-import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../backend"))
 
@@ -55,12 +58,14 @@ class LLMGenerator:
     def _get_openai(self):
         if self._openai_client is None:
             from openai import AsyncOpenAI
+
             self._openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         return self._openai_client
 
     def _get_anthropic(self):
         if self._anthropic_client is None:
             import anthropic
+
             self._anthropic_client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         return self._anthropic_client
 
@@ -87,13 +92,17 @@ class LLMGenerator:
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
         for ex in FEW_SHOT_EXAMPLES:
-            messages.append({"role": "user", "content": f"Context:\n{ex['context']}\n\nQuestion: {ex['query']}"})
+            messages.append(
+                {"role": "user", "content": f"Context:\n{ex['context']}\n\nQuestion: {ex['query']}"}
+            )
             messages.append({"role": "assistant", "content": ex["answer"]})
 
-        messages.append({
-            "role": "user",
-            "content": f"Context from knowledge base:\n\n{context}\n\nQuestion: {query}\n\nProvide a comprehensive, cited answer.",
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": f"Context from knowledge base:\n\n{context}\n\nQuestion: {query}\n\nProvide a comprehensive, cited answer.",
+            }
+        )
         return messages
 
     async def generate(

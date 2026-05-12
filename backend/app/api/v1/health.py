@@ -1,13 +1,14 @@
+import time
+from typing import Dict
+
+import structlog
 from fastapi import APIRouter
 from fastapi.responses import Response
 from pydantic import BaseModel
-from typing import Dict
-import time
-import structlog
 
 from ...db.database import check_db_health
 from ...services.cache import cache_service
-from ...services.metrics import registry, generate_latest, CONTENT_TYPE_LATEST
+from ...services.metrics import CONTENT_TYPE_LATEST, generate_latest, registry
 
 logger = structlog.get_logger()
 router = APIRouter()

@@ -1,18 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from pydantic import BaseModel
 from datetime import datetime, timezone
-import structlog
 
+import structlog
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordRequestForm
+from pydantic import BaseModel
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from ...core.security import create_access_token, create_refresh_token, verify_password
 from ...db.database import get_db
+from ...models.audit import AuditAction, AuditLog
 from ...models.user import User
-from ...models.audit import AuditLog, AuditAction
-from ...core.security import verify_password, create_access_token, create_refresh_token
 from ...services.cache import cache_service
 from ...services.metrics import auth_total
-from ..deps import get_current_active_user, get_client_ip
+from ..deps import get_client_ip, get_current_active_user
 
 logger = structlog.get_logger()
 router = APIRouter()
@@ -47,7 +48,9 @@ async def login(
 
     if not user or not verify_password(form_data.password, user.hashed_password):
         auth_total.labels(status="failed").inc()
-        await _log_audit(db, None, AuditAction.LOGIN, client_ip, {"username": form_data.username, "success": False})
+        await _log_audit(
+            db, None, AuditAction.LOGIN, client_ip, {"username": form_data.username, "success": False}
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect credentials")
 
     if not user.is_active:

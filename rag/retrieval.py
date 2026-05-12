@@ -2,17 +2,20 @@
 Hybrid retrieval: semantic (vector) + keyword (pg_trgm) search with RRF fusion.
 Supports confidence scoring and configurable top-k.
 """
-import asyncio
-from typing import List, Dict, Any, Optional
+
+import os
+import sys
+from typing import Any, Dict, List, Optional
+
 import structlog
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text, select
-import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../backend"))
 
 from app.config import settings
 from app.services.metrics import retrieval_latency
+
 from .embeddings import embedding_service
 from .query_enhancer import query_enhancer
 
@@ -65,6 +68,7 @@ class HybridRetriever:
         document_ids: Optional[List[str]] = None,
     ) -> List[RetrievalResult]:
         import time
+
         t0 = time.time()
         k = top_k or self.top_k
         enhanced_query, sub_queries = query_enhancer.enhance(query)
@@ -75,7 +79,10 @@ class HybridRetriever:
             keyword = await self._keyword_search(sub_query, db, k * 2, document_ids)
             fused = self._reciprocal_rank_fusion(semantic, keyword, k)
             for r in fused:
-                if r.chunk_id not in all_results or r.similarity_score > all_results[r.chunk_id].similarity_score:
+                if (
+                    r.chunk_id not in all_results
+                    or r.similarity_score > all_results[r.chunk_id].similarity_score
+                ):
                     all_results[r.chunk_id] = r
 
         results = sorted(all_results.values(), key=lambda x: x.similarity_score, reverse=True)[:k]
@@ -95,29 +102,23 @@ class HybridRetriever:
         query_embedding = await embedding_service.embed_text(query)
         embedding_str = "[" + ",".join(str(x) for x in query_embedding) + "]"
 
-        where_clause = "AND d.is_active = true"
+        params: dict = {"embedding": embedding_str, "k": k}
+        query_sql = (
+            "SELECT dc.id::text AS chunk_id, dc.document_id::text,"
+            " d.title AS document_title, dc.content,"
+            " 1 - (dc.embedding <=> :embedding::vector) AS similarity_score,"
+            " dc.page_number, dc.section"
+            " FROM document_chunks dc"
+            " JOIN documents d ON d.id = dc.document_id"
+            " WHERE d.status = 'indexed' AND d.is_active = true"
+        )
         if document_ids:
-            ids = ", ".join(f"'{did}'" for did in document_ids)
-            where_clause += f" AND dc.document_id IN ({ids})"
+            query_sql += " AND dc.document_id = ANY(:doc_ids)"
+            params["doc_ids"] = document_ids
+        query_sql += " ORDER BY dc.embedding <=> :embedding::vector LIMIT :k"
+        sql = text(query_sql)
 
-        sql = text(f"""
-            SELECT
-                dc.id::text AS chunk_id,
-                dc.document_id::text,
-                d.title AS document_title,
-                dc.content,
-                1 - (dc.embedding <=> :embedding::vector) AS similarity_score,
-                dc.page_number,
-                dc.section
-            FROM document_chunks dc
-            JOIN documents d ON d.id = dc.document_id
-            WHERE d.status = 'indexed'
-            {where_clause}
-            ORDER BY dc.embedding <=> :embedding::vector
-            LIMIT :k
-        """)
-
-        result = await db.execute(sql, {"embedding": embedding_str, "k": k})
+        result = await db.execute(sql, params)
         rows = result.fetchall()
 
         return [
@@ -140,31 +141,26 @@ class HybridRetriever:
         k: int,
         document_ids: Optional[List[str]],
     ) -> List[RetrievalResult]:
-        where_clause = "AND d.is_active = true"
+        kw_params: dict = {"query": query, "k": k}
+        kw_sql = (
+            "SELECT dc.id::text AS chunk_id, dc.document_id::text,"
+            " d.title AS document_title, dc.content,"
+            " similarity(dc.content, :query) AS similarity_score,"
+            " dc.page_number, dc.section"
+            " FROM document_chunks dc"
+            " JOIN documents d ON d.id = dc.document_id"
+            " WHERE d.status = 'indexed'"
+            " AND d.is_active = true"
+            " AND similarity(dc.content, :query) > 0.1"
+        )
         if document_ids:
-            ids = ", ".join(f"'{did}'" for did in document_ids)
-            where_clause += f" AND dc.document_id IN ({ids})"
-
-        sql = text(f"""
-            SELECT
-                dc.id::text AS chunk_id,
-                dc.document_id::text,
-                d.title AS document_title,
-                dc.content,
-                similarity(dc.content, :query) AS similarity_score,
-                dc.page_number,
-                dc.section
-            FROM document_chunks dc
-            JOIN documents d ON d.id = dc.document_id
-            WHERE d.status = 'indexed'
-              AND similarity(dc.content, :query) > 0.1
-            {where_clause}
-            ORDER BY similarity_score DESC
-            LIMIT :k
-        """)
+            kw_sql += " AND dc.document_id = ANY(:doc_ids)"
+            kw_params["doc_ids"] = document_ids
+        kw_sql += " ORDER BY similarity_score DESC LIMIT :k"
+        sql = text(kw_sql)
 
         try:
-            result = await db.execute(sql, {"query": query, "k": k})
+            result = await db.execute(sql, kw_params)
             rows = result.fetchall()
         except Exception as e:
             logger.warning("keyword_search_failed", error=str(e))

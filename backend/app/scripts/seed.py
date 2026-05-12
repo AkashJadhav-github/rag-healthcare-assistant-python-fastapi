@@ -1,15 +1,17 @@
 """Seed default admin user on first startup."""
+
 import os
-from sqlalchemy import select
+
 import structlog
+from sqlalchemy import select
 
 logger = structlog.get_logger()
 
 
 async def seed_admin_user():
+    from ..core.security import hash_password
     from ..db.database import AsyncSessionLocal
     from ..models.user import User, UserRole
-    from ..core.security import hash_password
 
     admin_email = os.getenv("ADMIN_EMAIL", "admin@healthcare.local")
     admin_password = os.getenv("ADMIN_PASSWORD", "Admin@12345!")

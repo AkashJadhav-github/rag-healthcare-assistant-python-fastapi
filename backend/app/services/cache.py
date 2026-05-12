@@ -1,8 +1,10 @@
-import json
 import hashlib
-from typing import Optional, Any
+import json
+from typing import Any, Optional
+
 import redis.asyncio as aioredis
 import structlog
+
 from ..config import settings
 
 logger = structlog.get_logger()

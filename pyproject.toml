@@ -1,9 +1,11 @@
 [tool.ruff]
 line-length = 110
 target-version = "py311"
+exclude = ["backend/app/db/migrations/"]
+
+[tool.ruff.lint]
 select = ["E", "F", "W", "I", "N"]
 ignore = ["E501", "N815"]
-exclude = ["backend/app/db/migrations/"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -16,4 +18,5 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
 testpaths = ["backend/tests", "rag/tests"]

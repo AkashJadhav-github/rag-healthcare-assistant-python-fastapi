@@ -1,33 +1,40 @@
-from prometheus_client import Counter, Histogram, Gauge, CollectorRegistry, generate_latest, CONTENT_TYPE_LATEST
 import time
 from functools import wraps
+
+from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 
 registry = CollectorRegistry(auto_describe=True)
 
 # Counters
 query_total = Counter("rag_queries_total", "Total number of queries", ["status", "cached"], registry=registry)
-ingest_total = Counter("rag_ingest_total", "Total document ingestion requests", ["status", "file_type"], registry=registry)
+ingest_total = Counter(
+    "rag_ingest_total", "Total document ingestion requests", ["status", "file_type"], registry=registry
+)
 auth_total = Counter("rag_auth_total", "Authentication attempts", ["status"], registry=registry)
 error_total = Counter("rag_errors_total", "Total errors", ["error_type"], registry=registry)
 
 # Histograms
 query_latency = Histogram(
-    "rag_query_latency_seconds", "Query end-to-end latency",
+    "rag_query_latency_seconds",
+    "Query end-to-end latency",
     buckets=[0.1, 0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0],
     registry=registry,
 )
 embedding_latency = Histogram(
-    "rag_embedding_latency_seconds", "Embedding generation latency",
+    "rag_embedding_latency_seconds",
+    "Embedding generation latency",
     buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0],
     registry=registry,
 )
 retrieval_latency = Histogram(
-    "rag_retrieval_latency_seconds", "Vector search latency",
+    "rag_retrieval_latency_seconds",
+    "Vector search latency",
     buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0],
     registry=registry,
 )
 llm_latency = Histogram(
-    "rag_llm_latency_seconds", "LLM generation latency",
+    "rag_llm_latency_seconds",
+    "LLM generation latency",
     buckets=[0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 10.0],
     registry=registry,
 )
@@ -52,4 +59,5 @@ def track_query_latency(func):
             raise
         finally:
             query_latency.observe(time.time() - start)
+
     return wrapper

@@ -1,17 +1,21 @@
 """
 Main RAG pipeline: ties together retrieval, PII masking, and LLM generation.
 """
-from typing import Dict, Any, Optional, List
+
+import os
+import sys
+from typing import Any, Dict, List, Optional
+
 import structlog
-import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../backend"))
 
 from app.config import settings
 from app.db.database import AsyncSessionLocal
-from .retrieval import retriever
+
 from .generation import generator
 from .pii_detector import pii_detector
+from .retrieval import retriever
 
 logger = structlog.get_logger()
 

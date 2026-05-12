@@ -1,21 +1,22 @@
-import structlog
 import logging
 from contextlib import asynccontextmanager
+
+import structlog
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from opentelemetry import trace
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-
-from .config import settings
-from .db.database import init_db
-from .api.v1 import api_router
-from .middleware.rate_limit import limiter, rate_limit_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+
+from .api.v1 import api_router
+from .config import settings
+from .db.database import init_db
+from .middleware.rate_limit import limiter, rate_limit_handler
 
 structlog.configure(
     processors=[
@@ -39,6 +40,7 @@ async def lifespan(app: FastAPI):
 
     if settings.ENVIRONMENT != "test":
         from .scripts.seed import seed_admin_user
+
         await seed_admin_user()
 
     yield
@@ -74,9 +76,12 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
 # ─── Request logging middleware ──────────────────────────────────────────────
 
+
 @app.middleware("http")
 async def request_logger(request: Request, call_next):
-    import time, uuid
+    import time
+    import uuid
+
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(request_id=request_id)
@@ -98,6 +103,7 @@ async def request_logger(request: Request, call_next):
 
 # ─── Global exception handler ────────────────────────────────────────────────
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error("unhandled_exception", error=str(exc), path=request.url.path)
@@ -109,6 +115,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 if settings.ENVIRONMENT != "test":
     try:
         from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+
         provider = TracerProvider()
         jaeger_exporter = JaegerExporter(
             agent_host_name=settings.JAEGER_HOST,
@@ -123,6 +130,7 @@ if settings.ENVIRONMENT != "test":
 # ─── Routes ──────────────────────────────────────────────────────────────────
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
 
 @app.get("/", tags=["Root"])
 async def root():

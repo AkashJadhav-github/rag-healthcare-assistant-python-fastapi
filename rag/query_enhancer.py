@@ -2,6 +2,7 @@
 Healthcare query enhancement: medical synonym expansion, abbreviation resolution,
 and query decomposition for multi-hop reasoning.
 """
+
 import re
 from typing import List, Tuple
 
@@ -123,9 +124,16 @@ class MedicalQueryEnhancer:
     def decompose_complex_query(self, query: str) -> List[str]:
         """Split compound questions for multi-hop retrieval."""
         sub_queries = [query]
-        connectors = re.split(r"\s+(and|also|additionally|furthermore|what about)\s+", query, flags=re.IGNORECASE)
+        connectors = re.split(
+            r"\s+(and|also|additionally|furthermore|what about)\s+", query, flags=re.IGNORECASE
+        )
         if len(connectors) > 1:
-            sub_queries = [q.strip() for q in connectors if len(q.strip()) > 10 and q.lower() not in ("and", "also", "additionally", "furthermore", "what about")]
+            sub_queries = [
+                q.strip()
+                for q in connectors
+                if len(q.strip()) > 10
+                and q.lower() not in ("and", "also", "additionally", "furthermore", "what about")
+            ]
         return sub_queries or [query]
 
     def enhance(self, query: str) -> Tuple[str, List[str]]:

@@ -1,32 +1,43 @@
-import time
 import hashlib
+import os
+import time
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, BackgroundTasks, Request, status
-from fastapi.responses import StreamingResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
-from pydantic import BaseModel, Field
-import structlog
-import aiofiles
-import os
 
-from ...db.database import get_db
-from ...models.user import User
-from ...models.document import Document, DocumentStatus, DocumentCategory
-from ...models.query import QueryLog, QuerySource
-from ...models.audit import AuditLog, AuditAction
-from ...core.rbac import Permission
-from ..deps import get_current_active_user, require_permission, get_client_ip
-from ...services.cache import cache_service
-from ...services.metrics import query_total, query_latency, ingest_total
+import aiofiles
+import structlog
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+    status,
+)
+from pydantic import BaseModel, Field
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from ...config import settings
+from ...core.rbac import Permission
+from ...db.database import get_db
+from ...models.audit import AuditAction, AuditLog
+from ...models.document import Document, DocumentCategory, DocumentStatus
+from ...models.query import QueryLog, QuerySource
+from ...models.user import User
+from ...services.cache import cache_service
+from ...services.metrics import ingest_total, query_latency, query_total
+from ..deps import get_client_ip, require_permission
 
 logger = structlog.get_logger()
 router = APIRouter()
 
 
 # ─── Request / Response Schemas ─────────────────────────────────────────────
+
 
 class AskRequest(BaseModel):
     query: str = Field(..., min_length=3, max_length=2000)
@@ -76,6 +87,7 @@ class QueryHistoryItem(BaseModel):
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
+
 @router.post("/ask", response_model=AskResponse)
 async def ask_question(
     request_body: AskRequest,
@@ -95,11 +107,14 @@ async def ask_question(
     if cached_result:
         query_total.labels(status="success", cached="true").inc()
         cached_result["was_cached"] = True
-        await _log_audit(db, current_user.id, AuditAction.QUERY, client_ip, {"query_hash": query_hash, "cached": True})
+        await _log_audit(
+            db, current_user.id, AuditAction.QUERY, client_ip, {"query_hash": query_hash, "cached": True}
+        )
         return AskResponse(**cached_result)
 
     try:
         from ....rag.pipeline import RAGPipeline
+
         pipeline = RAGPipeline()
         result = await pipeline.query(
             query=sanitized_query,
@@ -136,15 +151,17 @@ async def ask_question(
                 rank=idx + 1,
             )
             db.add(qs)
-            sources.append(SourceCitation(
-                document_title=src.get("document_title", "Unknown"),
-                document_id=str(src.get("document_id", "")),
-                chunk_content=src.get("chunk_content", ""),
-                similarity_score=src.get("similarity_score", 0.0),
-                rank=idx + 1,
-                page_number=src.get("page_number"),
-                section=src.get("section"),
-            ))
+            sources.append(
+                SourceCitation(
+                    document_title=src.get("document_title", "Unknown"),
+                    document_id=str(src.get("document_id", "")),
+                    chunk_content=src.get("chunk_content", ""),
+                    similarity_score=src.get("similarity_score", 0.0),
+                    rank=idx + 1,
+                    page_number=src.get("page_number"),
+                    section=src.get("section"),
+                )
+            )
 
         await db.commit()
 
@@ -168,7 +185,9 @@ async def ask_question(
     except Exception as e:
         logger.error("query_failed", error=str(e), user_id=str(current_user.id))
         query_total.labels(status="error", cached="false").inc()
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Query processing failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Query processing failed"
+        )
 
 
 @router.post("/ingest", response_model=IngestResponse)
@@ -221,7 +240,13 @@ async def ingest_document(
     background_tasks.add_task(_process_document, str(doc_id), save_path, ext)
 
     ingest_total.labels(status="accepted", file_type=ext).inc()
-    await _log_audit(db, current_user.id, AuditAction.DOCUMENT_UPLOAD, client_ip, {"document_id": str(doc_id), "filename": file.filename})
+    await _log_audit(
+        db,
+        current_user.id,
+        AuditAction.DOCUMENT_UPLOAD,
+        client_ip,
+        {"document_id": str(doc_id), "filename": file.filename},
+    )
 
     return IngestResponse(
         document_id=str(doc_id),
@@ -253,24 +278,28 @@ async def get_query_history(
     for log in logs:
         sources_result = await db.execute(select(QuerySource).where(QuerySource.query_id == log.id))
         sources_count = len(sources_result.scalars().all())
-        history.append(QueryHistoryItem(
-            query_id=str(log.id),
-            query_text=log.query_text,
-            response_text=log.response_text,
-            confidence_score=log.confidence_score,
-            latency_ms=log.latency_ms,
-            was_cached=log.was_cached or False,
-            sources_count=sources_count,
-            created_at=log.created_at.isoformat() if log.created_at else "",
-        ))
+        history.append(
+            QueryHistoryItem(
+                query_id=str(log.id),
+                query_text=log.query_text,
+                response_text=log.response_text,
+                confidence_score=log.confidence_score,
+                latency_ms=log.latency_ms,
+                was_cached=log.was_cached or False,
+                sources_count=sources_count,
+                created_at=log.created_at.isoformat() if log.created_at else "",
+            )
+        )
     return history
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def _sanitize_query(query: str) -> str:
     """Strip prompt injection attempts and normalize whitespace."""
     import re
+
     query = re.sub(r"(ignore previous instructions|system prompt|<[^>]+>)", "", query, flags=re.IGNORECASE)
     query = " ".join(query.split())
     return query[:2000]
@@ -279,10 +308,11 @@ def _sanitize_query(query: str) -> str:
 async def _process_document(doc_id: str, file_path: str, file_type: str) -> None:
     """Background task: chunk, embed, and index the document."""
     import sys
+
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../../"))
-    from rag.ingestion import DocumentIngestionService
     from app.db.database import AsyncSessionLocal
     from app.models.document import Document, DocumentStatus
+    from rag.ingestion import DocumentIngestionService
 
     async with AsyncSessionLocal() as db:
         try:
@@ -294,11 +324,14 @@ async def _process_document(doc_id: str, file_path: str, file_type: str) -> None
             await db.commit()
 
             ingestion = DocumentIngestionService()
-            chunk_count = await ingestion.ingest(doc_id=doc_id, file_path=file_path, file_type=file_type, db=db)
+            chunk_count = await ingestion.ingest(
+                doc_id=doc_id, file_path=file_path, file_type=file_type, db=db
+            )
 
             doc.status = DocumentStatus.INDEXED
             doc.chunk_count = chunk_count
             from datetime import datetime
+
             doc.indexed_at = datetime.utcnow()
             await db.commit()
         except Exception as e:

@@ -1,12 +1,14 @@
-import uuid
 import enum
+import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Float, DateTime, Enum, Text, JSON, ForeignKey, Boolean
-from sqlalchemy.dialects.postgresql import UUID, ARRAY
-from sqlalchemy.orm import relationship
+
 from pgvector.sqlalchemy import Vector
-from ..db.database import Base
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
 from ..config import settings
+from ..db.database import Base
 
 
 class DocumentStatus(str, enum.Enum):
@@ -57,7 +59,9 @@ class DocumentChunk(Base):
     __tablename__ = "document_chunks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    document_id = Column(
+        UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     chunk_index = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
     content_hash = Column(String(64), index=True)

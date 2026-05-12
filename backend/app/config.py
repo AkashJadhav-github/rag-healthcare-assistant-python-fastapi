@@ -1,6 +1,8 @@
-from pydantic_settings import BaseSettings
-from typing import List, Optional
+import tempfile
 from functools import lru_cache
+from typing import List, Optional
+
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -90,7 +92,7 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_HOUR: int = 1000
 
     # File Upload
-    UPLOAD_DIR: str = "/tmp/healthcare_uploads"
+    UPLOAD_DIR: str = str(tempfile.gettempdir()) + "/healthcare_uploads"
     ALLOWED_EXTENSIONS: List[str] = ["pdf", "docx", "txt", "md"]
 
     # Monitoring

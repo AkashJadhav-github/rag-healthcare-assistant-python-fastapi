@@ -2,9 +2,11 @@
 Healthcare-aware text chunking with overlapping windows for context retention.
 Uses sentence boundaries to avoid splitting mid-sentence.
 """
+
 import re
 from dataclasses import dataclass
 from typing import List, Optional
+
 import tiktoken
 
 
@@ -72,37 +74,43 @@ class MedicalTextChunker:
             if sentence_tokens > self.chunk_size:
                 if current_sentences:
                     content = " ".join(current_sentences)
-                    chunks.append(TextChunk(
-                        content=content,
-                        chunk_index=chunk_index,
-                        token_count=current_tokens,
-                        page_number=page_number,
-                        section=self._detect_section(content),
-                    ))
+                    chunks.append(
+                        TextChunk(
+                            content=content,
+                            chunk_index=chunk_index,
+                            token_count=current_tokens,
+                            page_number=page_number,
+                            section=self._detect_section(content),
+                        )
+                    )
                     chunk_index += 1
                     current_sentences, current_tokens = [], 0
 
                 words = sentence.split()
                 for i in range(0, len(words), self.chunk_size // 2):
-                    fragment = " ".join(words[i: i + self.chunk_size // 2])
-                    chunks.append(TextChunk(
-                        content=fragment,
-                        chunk_index=chunk_index,
-                        token_count=self._count_tokens(fragment),
-                        page_number=page_number,
-                    ))
+                    fragment = " ".join(words[i : i + self.chunk_size // 2])
+                    chunks.append(
+                        TextChunk(
+                            content=fragment,
+                            chunk_index=chunk_index,
+                            token_count=self._count_tokens(fragment),
+                            page_number=page_number,
+                        )
+                    )
                     chunk_index += 1
                 continue
 
             if current_tokens + sentence_tokens > self.chunk_size and current_sentences:
                 content = " ".join(current_sentences)
-                chunks.append(TextChunk(
-                    content=content,
-                    chunk_index=chunk_index,
-                    token_count=current_tokens,
-                    page_number=page_number,
-                    section=self._detect_section(content),
-                ))
+                chunks.append(
+                    TextChunk(
+                        content=content,
+                        chunk_index=chunk_index,
+                        token_count=current_tokens,
+                        page_number=page_number,
+                        section=self._detect_section(content),
+                    )
+                )
                 chunk_index += 1
 
                 overlap_sentences: List[str] = []
@@ -123,13 +131,15 @@ class MedicalTextChunker:
 
         if current_sentences:
             content = " ".join(current_sentences)
-            chunks.append(TextChunk(
-                content=content,
-                chunk_index=chunk_index,
-                token_count=current_tokens,
-                page_number=page_number,
-                section=self._detect_section(content),
-            ))
+            chunks.append(
+                TextChunk(
+                    content=content,
+                    chunk_index=chunk_index,
+                    token_count=current_tokens,
+                    page_number=page_number,
+                    section=self._detect_section(content),
+                )
+            )
 
         return chunks
 

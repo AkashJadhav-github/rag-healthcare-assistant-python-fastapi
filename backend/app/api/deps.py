@@ -1,14 +1,13 @@
-from typing import Optional
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 import structlog
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..core.rbac import Permission, has_permission
+from ..core.security import decode_token
 from ..db.database import get_db
 from ..models.user import User
-from ..core.security import decode_token
-from ..core.rbac import Permission, has_permission
 from ..services.cache import cache_service
 
 logger = structlog.get_logger()
@@ -52,6 +51,7 @@ def require_permission(permission: Permission):
                 detail=f"Insufficient permissions. Required: {permission.value}",
             )
         return current_user
+
     return checker
 
 

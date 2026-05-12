@@ -1,4 +1,3 @@
-import pytest
 from rag.chunking import MedicalTextChunker, TextChunk
 
 
@@ -47,7 +46,10 @@ def test_chunk_index_sequential():
 
 def test_page_number_preserved():
     chunker = MedicalTextChunker(chunk_size=200)
-    pages = [("Page one content about hypertension management.", 1), ("Page two content about diabetes treatment.", 2)]
+    pages = [
+        ("Page one content about hypertension management.", 1),
+        ("Page two content about diabetes treatment.", 2),
+    ]
     chunks = chunker.chunk_by_pages(pages)
     page_nums = [c.page_number for c in chunks]
     assert 1 in page_nums

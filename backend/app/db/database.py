@@ -1,8 +1,8 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.pool import NullPool
 from typing import AsyncGenerator
+
 import structlog
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 
 from ..config import settings
 
@@ -46,10 +46,10 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def init_db() -> None:
     """Initialize database — create tables and pgvector extension."""
     from sqlalchemy import text
+
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
-        from ..models import User, Document, DocumentChunk, QueryLog, QuerySource, AuditLog
         await conn.run_sync(Base.metadata.create_all)
     logger.info("database_initialized")
 
@@ -57,6 +57,7 @@ async def init_db() -> None:
 async def check_db_health() -> bool:
     try:
         from sqlalchemy import text
+
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
         return True

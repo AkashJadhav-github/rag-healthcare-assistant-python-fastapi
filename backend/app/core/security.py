@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Any
+from typing import Any, Optional
+
+from fastapi import HTTPException, status
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, status
+
 from ..config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -45,6 +47,7 @@ def decode_token(token: str) -> dict:
 def validate_password_strength(password: str) -> bool:
     """Enforce minimum 8 chars, uppercase, lowercase, digit, special char."""
     import re
+
     if len(password) < 8:
         return False
     if not re.search(r"[A-Z]", password):

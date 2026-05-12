@@ -2,11 +2,13 @@
 Embedding service supporting OpenAI ada-002 and local sentence-transformers.
 Includes Redis-backed caching and batch processing.
 """
+
 import asyncio
-import hashlib
+import os
+import sys
 from typing import List, Optional
+
 import structlog
-import sys, os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../backend"))
 
@@ -23,18 +25,21 @@ class EmbeddingService:
     def _get_openai_client(self):
         if self._openai_client is None:
             from openai import AsyncOpenAI
+
             self._openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         return self._openai_client
 
     def _get_local_model(self):
         if self._local_model is None:
             from sentence_transformers import SentenceTransformer
+
             self._local_model = SentenceTransformer("all-MiniLM-L6-v2")
         return self._local_model
 
     async def embed_text(self, text: str, use_cache: bool = True) -> List[float]:
         """Embed a single text with optional Redis caching."""
         from app.services.cache import cache_service
+
         cache_key = cache_service.make_embedding_key(text)
 
         if use_cache:
@@ -64,7 +69,7 @@ class EmbeddingService:
                 uncached_indices.append(i)
 
         for batch_start in range(0, len(uncached_indices), batch_size):
-            batch_indices = uncached_indices[batch_start: batch_start + batch_size]
+            batch_indices = uncached_indices[batch_start : batch_start + batch_size]
             batch_texts = [texts[i] for i in batch_indices]
 
             embeddings = await self._generate_batch(batch_texts)
@@ -87,8 +92,10 @@ class EmbeddingService:
         return await self._local_embed(texts)
 
     async def _openai_embed(self, texts: List[str]) -> List[List[float]]:
-        from app.services.metrics import embedding_latency
         import time
+
+        from app.services.metrics import embedding_latency
+
         client = self._get_openai_client()
         t0 = time.time()
         try:

@@ -2,13 +2,16 @@
 Document ingestion pipeline: parse → chunk → embed → store in pgvector.
 Supports PDF, DOCX, TXT, MD.
 """
+
+import asyncio
 import hashlib
 import os
-import asyncio
-from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+import tempfile
+from typing import List
+
 import structlog
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .chunking import MedicalTextChunker, TextChunk
 from .embeddings import embedding_service
@@ -38,6 +41,7 @@ class DocumentParser:
 
     def _parse_pdf_sync(self, path: str) -> List[tuple[str, int]]:
         from pypdf import PdfReader
+
         reader = PdfReader(path)
         pages = []
         for i, page in enumerate(reader.pages, start=1):
@@ -52,6 +56,7 @@ class DocumentParser:
 
     def _parse_docx_sync(self, path: str) -> List[tuple[str, int]]:
         from docx import Document
+
         doc = Document(path)
         full_text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
         return [(full_text, 1)]
@@ -85,16 +90,18 @@ class DocumentIngestionService:
     async def reindex_document(self, doc_id: str, db: AsyncSession) -> int:
         """Delete existing chunks and re-embed the document from stored content."""
         from backend.app.models.document import DocumentChunk
+
         await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == doc_id))
         await db.commit()
 
         from backend.app.models.document import Document
+
         result = await db.execute(select(Document).where(Document.id == doc_id))
         doc = result.scalar_one_or_none()
         if not doc:
             raise ValueError(f"Document {doc_id} not found")
 
-        tmp_path = f"/tmp/reindex_{doc_id}"
+        tmp_path = os.path.join(tempfile.gettempdir(), f"reindex_{doc_id}")
         if not os.path.exists(tmp_path):
             raise FileNotFoundError(f"Source file not found for reindex: {doc_id}")
 
@@ -104,8 +111,9 @@ class DocumentIngestionService:
         texts = [c.content for c in chunks]
         embeddings = await embedding_service.embed_batch(texts)
 
-        from backend.app.models.document import DocumentChunk
         import uuid
+
+        from backend.app.models.document import DocumentChunk
 
         chunk_objects = []
         for chunk, embedding in zip(chunks, embeddings):
