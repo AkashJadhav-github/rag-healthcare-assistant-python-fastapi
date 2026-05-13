@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import delete, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from rag.pipeline import RAGPipeline
 from ...config import settings
 from ...core.rbac import Permission
 from ...db.database import get_db
@@ -159,8 +160,6 @@ async def ask_question(
                 return
 
             try:
-                from rag.pipeline import RAGPipeline
-
                 pipeline = RAGPipeline()
 
                 final_meta: Dict[str, Any] = {}
@@ -263,8 +262,6 @@ async def ask_question(
         return AskResponse(**cached_result)
 
     try:
-        from rag.pipeline import RAGPipeline
-
         pipeline = RAGPipeline()
         result = await pipeline.query(
             query=sanitized_query,
