@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from ...core.security import create_access_token, create_refresh_token, verify_password
+from ...core.security import create_access_token, create_refresh_token, decode_token, verify_password
 from ...db.database import get_db
 from ...models.audit import AuditAction, AuditLog
 from ...models.user import User
@@ -29,6 +29,16 @@ class TokenResponse(BaseModel):
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
+class RefreshResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -66,6 +76,31 @@ async def login(
     await _log_audit(db, user.id, AuditAction.LOGIN, client_ip, {"success": True})
 
     return TokenResponse(access_token=access_token, refresh_token=refresh_token, expires_in=1800)
+
+
+@router.post("/refresh", response_model=RefreshResponse)
+async def refresh_token(
+    body: RefreshRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    payload = decode_token(body.refresh_token)
+
+    if payload.get("type") != "refresh":
+        logger.warning("refresh_token_wrong_type", token_type=payload.get("type"))
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
+
+    user_id = payload.get("sub")
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user or not user.is_active:
+        logger.warning("refresh_token_user_invalid", user_id=user_id, found=user is not None)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
+
+    access_token = create_access_token(subject=str(user.id))
+    logger.info("token_refreshed", user_id=str(user.id))
+
+    return RefreshResponse(access_token=access_token, expires_in=1800)
 
 
 @router.post("/logout")

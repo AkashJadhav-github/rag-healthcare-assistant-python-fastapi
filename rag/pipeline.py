@@ -4,7 +4,7 @@ Main RAG pipeline: ties together retrieval, PII masking, and LLM generation.
 
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import structlog
 
@@ -27,6 +27,7 @@ class RAGPipeline:
         max_sources: int = 5,
         user_id: Optional[str] = None,
         document_ids: Optional[List[str]] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
     ) -> Dict[str, Any]:
         """
         Full RAG query:
@@ -51,6 +52,7 @@ class RAGPipeline:
             query=masked_query,
             sources=source_dicts,
             max_tokens=settings.OPENAI_MAX_TOKENS,
+            conversation_history=conversation_history,
         )
 
         answer, phi_found = pii_detector.mask_phi(result["answer"])
@@ -64,4 +66,52 @@ class RAGPipeline:
             "model_used": result["model_used"],
             "latency_ms": result.get("latency_ms", 0),
             "phi_masked": phi_found,
+        }
+
+    async def query_stream(
+        self,
+        query: str,
+        max_sources: int = 5,
+        user_id: Optional[str] = None,
+        document_ids: Optional[List[str]] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Streaming RAG query — yields chunk dicts while the LLM generates its response,
+        then yields a final dict with sources and confidence metadata.
+        """
+        masked_query = pii_detector.mask_query(query)
+
+        async with AsyncSessionLocal() as db:
+            sources = await retriever.retrieve(
+                query=masked_query,
+                db=db,
+                top_k=max_sources,
+                document_ids=document_ids,
+            )
+
+        source_dicts = [s.to_dict() for s in sources]
+        confidence = generator._compute_confidence(source_dicts)
+
+        full_answer_parts: List[str] = []
+
+        async for text_chunk in generator.generate_stream(
+            query=masked_query,
+            sources=source_dicts,
+            max_tokens=settings.OPENAI_MAX_TOKENS,
+            conversation_history=conversation_history,
+        ):
+            full_answer_parts.append(text_chunk)
+            yield {"chunk": text_chunk, "done": False}
+
+        # PHI masking on the assembled answer (fire-and-forget for logging)
+        full_answer = "".join(full_answer_parts)
+        _, phi_found = pii_detector.mask_phi(full_answer)
+        if phi_found:
+            logger.warning("phi_detected_in_stream_response", user_id=user_id)
+
+        yield {
+            "done": True,
+            "sources": source_dicts,
+            "confidence_score": confidence,
         }

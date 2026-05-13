@@ -1,8 +1,9 @@
 import hashlib
+import json
 import os
 import time
 import uuid
-from typing import List, Optional
+from typing import AsyncGenerator, List, Optional
 
 import aiofiles
 import structlog
@@ -17,6 +18,7 @@ from fastapi import (
     UploadFile,
     status,
 )
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ...config import settings
 from ...core.rbac import Permission
 from ...db.database import get_db
+from ...middleware.rate_limit import limiter
 from ...models.audit import AuditAction, AuditLog
 from ...models.document import Document, DocumentCategory, DocumentChunk, DocumentStatus
 from ...models.query import QueryLog, QuerySource
@@ -100,9 +103,10 @@ class QueryHistoryItem(BaseModel):
 
 
 @router.post("/ask", response_model=AskResponse)
+@limiter.limit("60/minute")
 async def ask_question(
-    request_body: AskRequest,
     request: Request,
+    request_body: AskRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_permission(Permission.QUERY)),
     client_ip: str = Depends(get_client_ip),
@@ -113,8 +117,136 @@ async def ask_question(
     sanitized_query = _sanitize_query(request_body.query)
     query_hash = hashlib.sha256(sanitized_query.encode()).hexdigest()
 
+    # ── Feature 2: build session conversation history ─────────────────────────
+    conversation_history: List[dict] = []
+    if request_body.session_id:
+        history_result = await db.execute(
+            select(QueryLog)
+            .where(QueryLog.session_id == request_body.session_id)
+            .order_by(desc(QueryLog.created_at))
+            .limit(3)
+        )
+        recent_logs = history_result.scalars().all()
+        # Reverse so the list is oldest-first
+        conversation_history = [
+            {"query": log.query_text, "answer": log.response_text}
+            for log in reversed(recent_logs)
+        ]
+
+    # ── Cache check ───────────────────────────────────────────────────────────
     cache_key = cache_service.make_query_key(sanitized_query, str(current_user.id))
     cached_result = await cache_service.get(cache_key)
+
+    # ── Feature 3: streaming path ─────────────────────────────────────────────
+    if request_body.stream:
+        async def event_generator() -> AsyncGenerator[str, None]:
+            if cached_result:
+                query_total.labels(status="success", cached="true").inc()
+                await _log_audit(
+                    db,
+                    current_user.id,
+                    AuditAction.QUERY,
+                    client_ip,
+                    {"query_hash": query_hash, "cached": True, "stream": True},
+                )
+                # Stream the cached answer as a single chunk then done
+                cached_answer = cached_result.get("answer", "")
+                yield f"data: {json.dumps({'chunk': cached_answer, 'done': False})}\n\n"
+                yield (
+                    f"data: {json.dumps({'done': True, 'query_id': cached_result.get('query_id', ''), 'sources': cached_result.get('sources', []), 'confidence_score': cached_result.get('confidence_score', 0.0)})}\n\n"
+                )
+                return
+
+            try:
+                from rag.pipeline import RAGPipeline
+
+                pipeline = RAGPipeline()
+
+                final_meta: dict = {}
+                accumulated_answer: List[str] = []
+
+                async for chunk_dict in pipeline.query_stream(
+                    query=sanitized_query,
+                    max_sources=request_body.max_sources,
+                    user_id=str(current_user.id),
+                    conversation_history=conversation_history or None,
+                ):
+                    if chunk_dict.get("done"):
+                        final_meta = chunk_dict
+                    else:
+                        accumulated_answer.append(chunk_dict["chunk"])
+                        yield f"data: {json.dumps({'chunk': chunk_dict['chunk'], 'done': False})}\n\n"
+
+                # Persist the query log after streaming completes
+                latency_ms = int((time.time() - start_time) * 1000)
+                full_answer = "".join(accumulated_answer)
+                source_dicts = final_meta.get("sources", [])
+                confidence = final_meta.get("confidence_score", 0.0)
+
+                query_log = QueryLog(
+                    user_id=current_user.id,
+                    session_id=request_body.session_id or str(uuid.uuid4()),
+                    query_text=sanitized_query,
+                    query_hash=query_hash,
+                    response_text=full_answer,
+                    confidence_score=confidence,
+                    latency_ms=latency_ms,
+                    llm_model=settings.OPENAI_LLM_MODEL,
+                    retrieval_count=len(source_dicts),
+                    was_cached=False,
+                )
+                db.add(query_log)
+                await db.flush()
+
+                sources_out = []
+                for idx, src in enumerate(source_dicts):
+                    qs = QuerySource(
+                        query_id=query_log.id,
+                        document_id=src.get("document_id"),
+                        chunk_id=src.get("chunk_id"),
+                        document_title=src.get("document_title", "Unknown"),
+                        chunk_content=src.get("chunk_content", ""),
+                        similarity_score=src.get("similarity_score", 0.0),
+                        rank=idx + 1,
+                    )
+                    db.add(qs)
+                    sources_out.append(
+                        {
+                            "document_title": src.get("document_title", "Unknown"),
+                            "document_id": str(src.get("document_id", "")),
+                            "chunk_content": src.get("chunk_content", ""),
+                            "similarity_score": src.get("similarity_score", 0.0),
+                            "rank": idx + 1,
+                            "page_number": src.get("page_number"),
+                            "section": src.get("section"),
+                        }
+                    )
+
+                await db.commit()
+
+                query_total.labels(status="success", cached="false").inc()
+                query_latency.observe(time.time() - start_time)
+                await _log_audit(
+                    db,
+                    current_user.id,
+                    AuditAction.QUERY,
+                    client_ip,
+                    {"query_hash": query_hash, "stream": True},
+                )
+
+                final_sources = sources_out if request_body.include_sources else []
+                yield (
+                    f"data: {json.dumps({'done': True, 'query_id': str(query_log.id), 'sources': final_sources, 'confidence_score': confidence})}\n\n"
+                )
+
+            except Exception as e:
+                logger.error("stream_query_failed", error=str(e), user_id=str(current_user.id))
+                query_total.labels(status="error", cached="false").inc()
+                yield f"data: {json.dumps({'error': 'Query processing failed', 'done': True})}\n\n"
+
+        return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+    # ── Non-streaming path (original behavior) ────────────────────────────────
     if cached_result:
         query_total.labels(status="success", cached="true").inc()
         cached_result["was_cached"] = True
@@ -131,6 +263,7 @@ async def ask_question(
             query=sanitized_query,
             max_sources=request_body.max_sources,
             user_id=str(current_user.id),
+            conversation_history=conversation_history or None,
         )
 
         latency_ms = int((time.time() - start_time) * 1000)

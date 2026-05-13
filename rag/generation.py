@@ -6,7 +6,7 @@ Supports OpenAI GPT-4 and Anthropic Claude with few-shot examples.
 import os
 import sys
 import time
-from typing import Any, Dict, List
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import structlog
 
@@ -105,14 +105,34 @@ class LLMGenerator:
         )
         return messages
 
+    def _build_system_with_history(self, conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
+        """Return the system prompt, optionally prepending prior session exchanges."""
+        if not conversation_history:
+            return SYSTEM_PROMPT
+        history_lines = ["Previous exchanges in this session:"]
+        for exchange in conversation_history:
+            history_lines.append(f"Q: {exchange['query']}")
+            history_lines.append(f"A: {exchange['answer']}")
+        history_section = "\n".join(history_lines)
+        return f"{history_section}\n\n---\n\n{SYSTEM_PROMPT}"
+
     async def generate(
         self,
         query: str,
         sources: List[Dict[str, Any]],
         max_tokens: int = 1500,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
     ) -> Dict[str, Any]:
         t0 = time.time()
         messages = self._build_messages(query, sources)
+
+        # Inject conversation history into the system message if provided
+        if conversation_history:
+            system_with_history = self._build_system_with_history(conversation_history)
+            for msg in messages:
+                if msg["role"] == "system":
+                    msg["content"] = system_with_history
+                    break
 
         if settings.LLM_PROVIDER == "anthropic" and settings.ANTHROPIC_API_KEY:
             answer, model_used = await self._anthropic_generate(messages, max_tokens)
@@ -131,6 +151,61 @@ class LLMGenerator:
             "confidence_score": confidence,
             "latency_ms": int((time.time() - t0) * 1000),
         }
+
+    async def generate_stream(
+        self,
+        query: str,
+        sources: List[Dict[str, Any]],
+        max_tokens: int = 1500,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
+    ) -> AsyncGenerator[str, None]:
+        """Stream LLM response text chunk by chunk."""
+        messages = self._build_messages(query, sources)
+
+        # Inject conversation history into the system message if provided
+        if conversation_history:
+            system_with_history = self._build_system_with_history(conversation_history)
+            for msg in messages:
+                if msg["role"] == "system":
+                    msg["content"] = system_with_history
+                    break
+
+        if settings.LLM_PROVIDER == "anthropic" and settings.ANTHROPIC_API_KEY:
+            async for chunk in self._anthropic_stream(messages, max_tokens):
+                yield chunk
+        elif settings.OPENAI_API_KEY:
+            async for chunk in self._openai_stream(messages, max_tokens):
+                yield chunk
+        else:
+            yield self._fallback_answer(query, sources)
+
+    async def _openai_stream(self, messages: List[Dict], max_tokens: int) -> AsyncGenerator[str, None]:
+        client = self._get_openai()
+        stream = await client.chat.completions.create(
+            model=settings.OPENAI_LLM_MODEL,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=0.1,
+            stream=True,
+        )
+        async for chunk in stream:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                yield delta
+
+    async def _anthropic_stream(self, messages: List[Dict], max_tokens: int) -> AsyncGenerator[str, None]:
+        client = self._get_anthropic()
+        system = next((m["content"] for m in messages if m["role"] == "system"), "")
+        user_messages = [m for m in messages if m["role"] != "system"]
+        async with client.messages.stream(
+            model=settings.ANTHROPIC_MODEL,
+            max_tokens=max_tokens,
+            system=system,
+            messages=user_messages,
+            temperature=0.1,
+        ) as stream:
+            async for text in stream.text_stream:
+                yield text
 
     async def _openai_generate(self, messages: List[Dict], max_tokens: int) -> tuple[str, str]:
         client = self._get_openai()
