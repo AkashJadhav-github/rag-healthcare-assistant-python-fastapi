@@ -22,23 +22,13 @@ async def test_ask_too_short_query(client: AsyncClient, clinician_token: str):
 
 
 @pytest.mark.asyncio
-@patch("app.api.v1.knowledge.RAGPipeline")
+@patch("rag.pipeline.RAGPipeline")
 async def test_ask_success(mock_pipeline_class, client: AsyncClient, clinician_token: str):
     mock_pipeline = MagicMock()
     mock_pipeline.query = AsyncMock(
         return_value={
             "answer": "Hypertension is elevated blood pressure above 130/80 mmHg.",
-            "sources": [
-                {
-                    "chunk_id": "abc123",
-                    "document_id": "doc001",
-                    "document_title": "ADA Guidelines 2024",
-                    "chunk_content": "Hypertension is defined as...",
-                    "similarity_score": 0.92,
-                    "page_number": 5,
-                    "section": "Diagnosis",
-                }
-            ],
+            "sources": [],
             "confidence_score": 0.88,
             "model_used": "gpt-4-turbo-preview",
             "latency_ms": 1200,

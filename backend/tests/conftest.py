@@ -15,16 +15,38 @@ from app.db.database import Base, get_db
 from app.main import app
 from app.models.user import User, UserRole
 
+_pg_host = os.getenv("POSTGRES_HOST", "localhost")
+_pg_port = os.getenv("POSTGRES_PORT", "5432")
+_pg_user = os.getenv("POSTGRES_USER", "healthcare_user")
+_pg_pass = os.getenv("POSTGRES_PASSWORD", "healthcare_pass")
 TEST_DB_URL = os.getenv(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://healthcare_user:healthcare_pass@localhost:5432/healthcare_rag_test",
+    f"postgresql+asyncpg://{_pg_user}:{_pg_pass}@{_pg_host}:{_pg_port}/healthcare_rag_test",
 )
+
+def _ensure_test_db() -> None:
+    import asyncio
+    import asyncpg
+
+    async def _create():
+        conn = await asyncpg.connect(
+            user=_pg_user, password=_pg_pass, host=_pg_host, port=int(_pg_port), database="healthcare_rag"
+        )
+        exists = await conn.fetchval("SELECT 1 FROM pg_database WHERE datname = 'healthcare_rag_test'")
+        if not exists:
+            await conn.execute("CREATE DATABASE healthcare_rag_test")
+        await conn.close()
+
+    asyncio.get_event_loop().run_until_complete(_create())
+
+
+_ensure_test_db()
 
 test_engine = create_async_engine(TEST_DB_URL, poolclass=NullPool)
 TestSession = async_sessionmaker(test_engine, expire_on_commit=False)
 
 
-@pytest_asyncio.fixture(scope="session", loop_scope="session")
+@pytest_asyncio.fixture(scope="session")
 async def init_test_db():
     from sqlalchemy import text
 
@@ -45,39 +67,43 @@ async def db(init_test_db) -> AsyncGenerator[AsyncSession, None]:
         await session.rollback()
 
 
-@pytest_asyncio.fixture
-async def admin_user(db: AsyncSession) -> User:
-    user = User(
-        email="admin@test.com",
-        username="testadmin",
-        hashed_password=hash_password("Admin@12345!"),
-        full_name="Test Admin",
-        role=UserRole.ADMIN,
-        is_active=True,
-        is_verified=True,
-    )
-    db.add(user)
-    await db.flush()
+@pytest_asyncio.fixture(scope="session")
+async def admin_user(init_test_db) -> User:
+    async with TestSession() as session:
+        user = User(
+            email="admin@test.com",
+            username="testadmin",
+            hashed_password=hash_password("Admin@12345!"),
+            full_name="Test Admin",
+            role=UserRole.ADMIN,
+            is_active=True,
+            is_verified=True,
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
     return user
 
 
-@pytest_asyncio.fixture
-async def clinician_user(db: AsyncSession) -> User:
-    user = User(
-        email="clinician@test.com",
-        username="testclinician",
-        hashed_password=hash_password("Clinic@12345!"),
-        full_name="Test Clinician",
-        role=UserRole.CLINICIAN,
-        is_active=True,
-        is_verified=True,
-    )
-    db.add(user)
-    await db.flush()
+@pytest_asyncio.fixture(scope="session")
+async def clinician_user(init_test_db) -> User:
+    async with TestSession() as session:
+        user = User(
+            email="clinician@test.com",
+            username="testclinician",
+            hashed_password=hash_password("Clinic@12345!"),
+            full_name="Test Clinician",
+            role=UserRole.CLINICIAN,
+            is_active=True,
+            is_verified=True,
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
     return user
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope="session")
 async def admin_token(admin_user: User) -> str:
     return create_access_token(subject=str(admin_user.id))
 

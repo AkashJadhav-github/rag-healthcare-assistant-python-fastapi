@@ -1,6 +1,15 @@
 import pytest
+import pytest_asyncio
+from unittest.mock import patch
 from app.models.user import User, UserRole
 from httpx import AsyncClient
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def reset_rate_limit():
+    """Patch rate-limit increment so login tests never hit 429."""
+    with patch("app.services.cache.CacheService.increment", return_value=1):
+        yield
 
 
 @pytest.mark.asyncio

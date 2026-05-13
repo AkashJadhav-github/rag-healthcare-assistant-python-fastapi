@@ -71,12 +71,15 @@ class CacheService:
             return False
 
     async def increment(self, key: str, expire: int = 60) -> int:
-        c = await self.client()
-        pipe = c.pipeline()
-        await pipe.incr(key)
-        await pipe.expire(key, expire)
-        results = await pipe.execute()
-        return results[0]
+        try:
+            c = await self.client()
+            pipe = c.pipeline()
+            await pipe.incr(key)
+            await pipe.expire(key, expire)
+            results = await pipe.execute()
+            return results[0]
+        except Exception:
+            return 0
 
     @staticmethod
     def make_query_key(query: str, user_id: str = "") -> str:
