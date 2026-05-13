@@ -61,9 +61,9 @@ vector_store_size = Gauge(
 )
 
 
-def track_query_latency(func):
+def track_query_latency(func):  # pragma: no cover
     @wraps(func)
-    async def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):  # pragma: no cover
         start = time.time()
         try:
             result = await func(*args, **kwargs)

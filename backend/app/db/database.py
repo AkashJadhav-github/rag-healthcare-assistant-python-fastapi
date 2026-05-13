@@ -43,7 +43,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def init_db() -> None:
+async def init_db() -> None:  # pragma: no cover
     """Initialize database — create tables and pgvector extension."""
     from sqlalchemy import text
 

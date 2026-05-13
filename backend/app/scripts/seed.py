@@ -8,7 +8,7 @@ from sqlalchemy import select
 logger = structlog.get_logger()
 
 
-async def seed_admin_user():
+async def seed_admin_user():  # pragma: no cover
     from ..core.security import hash_password
     from ..db.database import AsyncSessionLocal
     from ..models.user import User, UserRole

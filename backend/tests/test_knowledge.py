@@ -106,6 +106,73 @@ async def test_delete_document_not_found(client: AsyncClient, admin_token: str):
 
 
 @pytest.mark.asyncio
+async def test_delete_document_requires_auth(client: AsyncClient):
+    """DELETE /knowledge/documents/<uuid> with no auth should return 403."""
+    fake_id = "00000000-0000-0000-0000-000000000000"
+    response = await client.delete(f"/api/v1/knowledge/documents/{fake_id}")
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_get_history_pagination(client: AsyncClient, clinician_token: str):
+    """GET /knowledge/history with pagination params should return 200 and a list."""
+    response = await client.get(
+        "/api/v1/knowledge/history",
+        params={"page": 1, "page_size": 5},
+        headers={"Authorization": f"Bearer {clinician_token}"},
+    )
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+
+
+@pytest.mark.asyncio
+@patch("app.api.v1.knowledge.RAGPipeline")
+async def test_ask_with_session_id(
+    mock_pipeline_class, client: AsyncClient, clinician_token: str
+):
+    """POST /knowledge/ask with a session_id should return 200 and expected fields."""
+    mock_pipeline = MagicMock()
+    mock_pipeline.query = AsyncMock(
+        return_value={
+            "answer": "Diabetes is a metabolic disease characterised by high blood sugar.",
+            "sources": [],
+            "confidence_score": 0.91,
+            "model_used": "gpt-4-turbo-preview",
+            "latency_ms": 950,
+        }
+    )
+    mock_pipeline_class.return_value = mock_pipeline
+
+    response = await client.post(
+        "/api/v1/knowledge/ask",
+        json={
+            "query": "What are the symptoms of type 2 diabetes?",
+            "session_id": "11111111-1111-1111-1111-111111111111",
+        },
+        headers={"Authorization": f"Bearer {clinician_token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "answer" in data
+    assert "sources" in data
+    assert "confidence_score" in data
+    assert "query_id" in data
+
+
+@pytest.mark.asyncio
+async def test_ingest_no_auth(client: AsyncClient):
+    """POST /knowledge/ingest with no auth should return 403."""
+    import io
+
+    response = await client.post(
+        "/api/v1/knowledge/ingest",
+        files={"file": ("test.txt", io.BytesIO(b"Some content"), "text/plain")},
+        data={"title": "Unauthenticated Upload"},
+    )
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_retention_stats(client: AsyncClient, admin_token: str):
     """GET /admin/retention/stats with admin token should return 200 with expected shape."""
     response = await client.get(

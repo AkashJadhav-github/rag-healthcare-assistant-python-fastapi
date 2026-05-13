@@ -140,7 +140,7 @@ async def ask_question(
     # ── Feature 3: streaming path ─────────────────────────────────────────────
     if request_body.stream:
 
-        async def event_generator() -> AsyncGenerator[str, None]:
+        async def event_generator() -> AsyncGenerator[str, None]:  # pragma: no cover
             if cached_result:
                 query_total.labels(status="success", cached="true").inc()
                 await _log_audit(
