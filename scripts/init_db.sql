@@ -3,5 +3,4 @@ CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create optimized GIN index on document_chunks content for keyword search
--- (applied after table creation by the application via Alembic)
+-- Indexes are created by the application on startup (see app/db/database.py init_db).
