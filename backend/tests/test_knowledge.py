@@ -24,7 +24,7 @@ async def test_ask_too_short_query(client: AsyncClient, clinician_token: str):
 
 
 @pytest.mark.asyncio
-@patch("rag.pipeline.RAGPipeline")
+@patch("app.api.v1.knowledge.RAGPipeline")
 async def test_ask_success(
     mock_pipeline_class, client: AsyncClient, clinician_token: str
 ):
