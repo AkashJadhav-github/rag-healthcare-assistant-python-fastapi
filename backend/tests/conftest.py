@@ -47,16 +47,22 @@ TEST_DB_URL = os.getenv(
 
 
 def _ensure_test_db() -> None:
+    # Skip if TEST_DATABASE_URL is set — CI already created the DB via service config
+    if os.getenv("TEST_DATABASE_URL"):
+        return
+
     import asyncio
+
     import asyncpg
 
     async def _create():
+        # Connect to the always-available default postgres database
         conn = await asyncpg.connect(
             user=_pg_user,
             password=_pg_pass,
             host=_pg_host,
             port=int(_pg_port),
-            database="healthcare_rag",
+            database="postgres",
         )
         exists = await conn.fetchval(
             "SELECT 1 FROM pg_database WHERE datname = 'healthcare_rag_test'"
