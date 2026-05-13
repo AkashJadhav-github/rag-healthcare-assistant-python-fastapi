@@ -22,17 +22,20 @@ ROLE_PERMISSIONS: dict[UserRole, Set[Permission]] = {
     UserRole.VIEWER: {
         Permission.QUERY,
         Permission.VIEW_HISTORY,
+        Permission.DELETE_DOCUMENTS,
     },
     UserRole.CLINICIAN: {
         Permission.QUERY,
         Permission.VIEW_HISTORY,
         Permission.INGEST,
+        Permission.DELETE_DOCUMENTS,
     },
     UserRole.RESEARCHER: {
         Permission.QUERY,
         Permission.VIEW_HISTORY,
         Permission.INGEST,
         Permission.VIEW_ALL_HISTORY,
+        Permission.DELETE_DOCUMENTS,
     },
     UserRole.ADMIN: {
         Permission.QUERY,

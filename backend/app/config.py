@@ -109,6 +109,10 @@ class Settings(BaseSettings):
     # Encryption
     ENCRYPTION_KEY: Optional[str] = None
 
+    # Data Retention
+    AUDIT_LOG_RETENTION_DAYS: int = 2190   # 6 years
+    QUERY_LOG_RETENTION_DAYS: int = 90
+
     class Config:
         env_file = ".env"
         case_sensitive = True

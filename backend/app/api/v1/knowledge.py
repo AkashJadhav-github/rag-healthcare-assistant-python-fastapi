@@ -18,14 +18,14 @@ from fastapi import (
     status,
 )
 from pydantic import BaseModel, Field
-from sqlalchemy import desc, select
+from sqlalchemy import delete, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...config import settings
 from ...core.rbac import Permission
 from ...db.database import get_db
 from ...models.audit import AuditAction, AuditLog
-from ...models.document import Document, DocumentCategory, DocumentStatus
+from ...models.document import Document, DocumentCategory, DocumentChunk, DocumentStatus
 from ...models.query import QueryLog, QuerySource
 from ...models.user import User
 from ...services.cache import cache_service
@@ -72,6 +72,17 @@ class IngestResponse(BaseModel):
     title: str
     status: str
     message: str
+
+
+class DeleteDocumentResponse(BaseModel):
+    message: str
+    document_id: str
+
+
+class ReuploadDocumentResponse(BaseModel):
+    message: str
+    document_id: str
+    version: int
 
 
 class QueryHistoryItem(BaseModel):
@@ -253,6 +264,135 @@ async def ingest_document(
         title=title or file.filename,
         status="pending",
         message="Document queued for processing",
+    )
+
+
+@router.delete("/documents/{document_id}", response_model=DeleteDocumentResponse)
+async def delete_document(
+    document_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission(Permission.DELETE_DOCUMENTS)),
+    client_ip: str = Depends(get_client_ip),
+):
+    """Soft-delete a document and hard-delete all its chunks.
+
+    Any authenticated user can delete their own document; ADMIN can delete any document.
+    """
+    from ...models.user import UserRole
+
+    result = await db.execute(select(Document).where(Document.id == document_id))
+    document = result.scalar_one_or_none()
+
+    if document is None or not document.is_active or document.status == DocumentStatus.DELETED:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found or already deleted",
+        )
+
+    # Non-admins may only delete their own documents
+    if current_user.role != UserRole.ADMIN and str(document.uploaded_by) != str(current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to delete this document",
+        )
+
+    # Hard-delete all chunks
+    await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document.id))
+
+    # Soft-delete the document
+    document.is_active = False
+    document.status = DocumentStatus.DELETED
+
+    await db.commit()
+
+    await _log_audit(
+        db,
+        current_user.id,
+        AuditAction.DOCUMENT_DELETE,
+        client_ip,
+        {"document_id": document_id, "title": document.title},
+    )
+
+    logger.info("document_deleted", document_id=document_id, user_id=str(current_user.id))
+    return DeleteDocumentResponse(message="Document deleted", document_id=document_id)
+
+
+@router.put("/documents/{document_id}/reupload", response_model=ReuploadDocumentResponse, status_code=status.HTTP_202_ACCEPTED)
+async def reupload_document(
+    document_id: str,
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission(Permission.INGEST)),
+    client_ip: str = Depends(get_client_ip),
+):
+    """Replace a document with a new file upload, incrementing its version.
+
+    Requires at least CLINICIAN role (INGEST permission). Deletes all existing chunks,
+    bumps the document version, then re-runs ingestion on the new file.
+    """
+    result = await db.execute(select(Document).where(Document.id == document_id))
+    document = result.scalar_one_or_none()
+
+    if document is None or not document.is_active or document.status == DocumentStatus.DELETED:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found or already deleted",
+        )
+
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in settings.ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File type .{ext} not supported. Allowed: {settings.ALLOWED_EXTENSIONS}",
+        )
+
+    content = await file.read()
+    size_mb = len(content) / (1024 * 1024)
+    if size_mb > settings.MAX_DOCUMENT_SIZE_MB:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File exceeds {settings.MAX_DOCUMENT_SIZE_MB}MB limit",
+        )
+
+    # Save the new file to disk
+    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+    save_path = os.path.join(settings.UPLOAD_DIR, f"{document_id}_v{(document.version or 0) + 1}.{ext}")
+    async with aiofiles.open(save_path, "wb") as f:
+        await f.write(content)
+
+    # Hard-delete all existing chunks
+    await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document.id))
+
+    # Increment version and reset document state
+    new_version = (document.version or 0) + 1
+    document.version = new_version
+    document.filename = file.filename
+    document.file_type = ext
+    document.file_size = len(content)
+    document.status = DocumentStatus.PENDING
+    document.chunk_count = 0
+    document.error_message = None
+    document.indexed_at = None
+
+    await db.commit()
+
+    background_tasks.add_task(_process_document, document_id, save_path, ext)
+
+    ingest_total.labels(status="accepted", file_type=ext).inc()
+    await _log_audit(
+        db,
+        current_user.id,
+        AuditAction.REINDEX,
+        client_ip,
+        {"document_id": document_id, "new_version": new_version, "filename": file.filename},
+    )
+
+    logger.info("document_reupload_queued", document_id=document_id, version=new_version, user_id=str(current_user.id))
+    return ReuploadDocumentResponse(
+        message="Document queued for reprocessing",
+        document_id=document_id,
+        version=new_version,
     )
 
 

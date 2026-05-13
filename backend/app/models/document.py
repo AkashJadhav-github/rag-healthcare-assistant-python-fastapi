@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -16,6 +16,7 @@ class DocumentStatus(str, enum.Enum):
     PROCESSING = "processing"
     INDEXED = "indexed"
     FAILED = "failed"
+    DELETED = "deleted"
 
 
 class DocumentCategory(str, enum.Enum):
@@ -38,7 +39,7 @@ class Document(Base):
     file_size = Column(Integer)
     category = Column(Enum(DocumentCategory), default=DocumentCategory.OTHER)
     source = Column(String(500))
-    version = Column(String(50), default="1.0")
+    version = Column(Integer, default=1, server_default=text("1"), nullable=False)
     status = Column(Enum(DocumentStatus), default=DocumentStatus.PENDING, nullable=False, index=True)
     chunk_count = Column(Integer, default=0)
     error_message = Column(Text)

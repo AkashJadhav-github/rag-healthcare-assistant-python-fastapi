@@ -5,6 +5,7 @@ from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integ
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
+from ..core.encryption import EncryptedString
 from ..db.database import Base
 
 
@@ -16,9 +17,9 @@ class QueryLog(Base):
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     session_id = Column(String(100), index=True)
-    query_text = Column(Text, nullable=False)
+    query_text = Column(EncryptedString, nullable=False)
     query_hash = Column(String(64), index=True)
-    response_text = Column(Text)
+    response_text = Column(EncryptedString)
     enhanced_query = Column(Text)
     confidence_score = Column(Float)
     latency_ms = Column(Integer)

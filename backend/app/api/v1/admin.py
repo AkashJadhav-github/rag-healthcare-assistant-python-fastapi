@@ -1,16 +1,19 @@
+from datetime import datetime, timedelta
 from typing import Optional
 
 import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ...config import settings
 from ...core.rbac import Permission
 from ...core.security import hash_password
 from ...db.database import get_db
 from ...models.audit import AuditAction, AuditLog
 from ...models.document import Document, DocumentChunk, DocumentStatus
+from ...models.query import QueryLog
 from ...models.user import User, UserRole
 from ...services.metrics import documents_indexed, vector_store_size
 from ..deps import get_client_ip, require_permission
@@ -167,6 +170,115 @@ async def get_stats(
         total_chunks=total_chunks,
         total_queries=total_queries,
         active_users=active_user_count,
+    )
+
+
+class RetentionLogStats(BaseModel):
+    total: int
+    expired: int
+    retention_days: int
+
+
+class RetentionStatsResponse(BaseModel):
+    audit_logs: RetentionLogStats
+    query_logs: RetentionLogStats
+    policy_applied_at: str
+
+
+class RetentionPurgeResponse(BaseModel):
+    audit_logs_deleted: int
+    query_logs_deleted: int
+    purged_at: str
+
+
+@router.post("/retention/purge", response_model=RetentionPurgeResponse)
+async def purge_expired_logs(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission(Permission.ADMIN)),
+    client_ip: str = Depends(get_client_ip),
+):
+    """Delete audit and query log rows that have exceeded their retention window."""
+    now = datetime.utcnow()
+    audit_cutoff = now - timedelta(days=settings.AUDIT_LOG_RETENTION_DAYS)
+    query_cutoff = now - timedelta(days=settings.QUERY_LOG_RETENTION_DAYS)
+
+    audit_result = await db.execute(
+        delete(AuditLog).where(AuditLog.created_at < audit_cutoff)
+    )
+    audit_deleted = audit_result.rowcount
+
+    query_result = await db.execute(
+        delete(QueryLog).where(QueryLog.created_at < query_cutoff)
+    )
+    query_deleted = query_result.rowcount
+
+    purged_at = now.isoformat()
+
+    log = AuditLog(
+        user_id=current_user.id,
+        action=AuditAction.ADMIN_ACTION,
+        ip_address=client_ip,
+        details={
+            "action": "retention_purge",
+            "audit_logs_deleted": audit_deleted,
+            "query_logs_deleted": query_deleted,
+            "audit_cutoff": audit_cutoff.isoformat(),
+            "query_cutoff": query_cutoff.isoformat(),
+        },
+    )
+    db.add(log)
+    await db.commit()
+
+    logger.info(
+        "retention_purge_complete",
+        audit_logs_deleted=audit_deleted,
+        query_logs_deleted=query_deleted,
+        user_id=str(current_user.id),
+    )
+
+    return RetentionPurgeResponse(
+        audit_logs_deleted=audit_deleted,
+        query_logs_deleted=query_deleted,
+        purged_at=purged_at,
+    )
+
+
+@router.get("/retention/stats", response_model=RetentionStatsResponse)
+async def get_retention_stats(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission(Permission.ADMIN)),
+):
+    """Return counts of log rows that are expired vs. total, along with the active retention policy."""
+    now = datetime.utcnow()
+    audit_cutoff = now - timedelta(days=settings.AUDIT_LOG_RETENTION_DAYS)
+    query_cutoff = now - timedelta(days=settings.QUERY_LOG_RETENTION_DAYS)
+
+    audit_total = (await db.execute(select(func.count(AuditLog.id)))).scalar_one()
+    audit_expired = (
+        await db.execute(
+            select(func.count(AuditLog.id)).where(AuditLog.created_at < audit_cutoff)
+        )
+    ).scalar_one()
+
+    query_total = (await db.execute(select(func.count(QueryLog.id)))).scalar_one()
+    query_expired = (
+        await db.execute(
+            select(func.count(QueryLog.id)).where(QueryLog.created_at < query_cutoff)
+        )
+    ).scalar_one()
+
+    return RetentionStatsResponse(
+        audit_logs=RetentionLogStats(
+            total=audit_total,
+            expired=audit_expired,
+            retention_days=settings.AUDIT_LOG_RETENTION_DAYS,
+        ),
+        query_logs=RetentionLogStats(
+            total=query_total,
+            expired=query_expired,
+            retention_days=settings.QUERY_LOG_RETENTION_DAYS,
+        ),
+        policy_applied_at=now.isoformat(),
     )
 
 
