@@ -10,7 +10,5 @@ limiter = Limiter(key_func=get_remote_address)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     return JSONResponse(
         status_code=429,
-        content={
-            "detail": f"Rate limit exceeded: {exc.detail}. Retry after {exc.retry_after}s"
-        },
+        content={"detail": f"Rate limit exceeded: {exc.detail}. Retry after {exc.retry_after}s"},
     )

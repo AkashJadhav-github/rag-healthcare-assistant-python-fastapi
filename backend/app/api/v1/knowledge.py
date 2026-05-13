@@ -1,8 +1,10 @@
 import hashlib
 import json
 import os
+import re
 import time
 import uuid
+from datetime import datetime
 from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 import aiofiles
@@ -24,6 +26,7 @@ from sqlalchemy import delete, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from rag.pipeline import RAGPipeline
+
 from ...config import settings
 from ...core.rbac import Permission
 from ...db.database import get_db
@@ -130,8 +133,7 @@ async def ask_question(
         recent_logs = history_result.scalars().all()
         # Reverse so the list is oldest-first
         conversation_history = [
-            {"query": log.query_text, "answer": log.response_text}
-            for log in reversed(recent_logs)
+            {"query": log.query_text, "answer": log.response_text} for log in reversed(recent_logs)
         ]
 
     # ── Cache check ───────────────────────────────────────────────────────────
@@ -240,9 +242,7 @@ async def ask_question(
                 )
 
             except Exception as e:
-                logger.error(
-                    "stream_query_failed", error=str(e), user_id=str(current_user.id)
-                )
+                logger.error("stream_query_failed", error=str(e), user_id=str(current_user.id))
                 query_total.labels(status="error", cached="false").inc()
                 yield f"data: {json.dumps({'error': 'Query processing failed', 'done': True})}\n\n"
 
@@ -427,29 +427,21 @@ async def delete_document(
     result = await db.execute(select(Document).where(Document.id == document_id))
     document = result.scalar_one_or_none()
 
-    if (
-        document is None
-        or not document.is_active
-        or document.status == DocumentStatus.DELETED
-    ):
+    if document is None or not document.is_active or document.status == DocumentStatus.DELETED:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found or already deleted",
         )
 
     # Non-admins may only delete their own documents
-    if current_user.role != UserRole.ADMIN and str(document.uploaded_by) != str(
-        current_user.id
-    ):
+    if current_user.role != UserRole.ADMIN and str(document.uploaded_by) != str(current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete this document",
         )
 
     # Hard-delete all chunks
-    await db.execute(
-        delete(DocumentChunk).where(DocumentChunk.document_id == document.id)
-    )
+    await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document.id))
 
     # Soft-delete the document
     document.is_active = False
@@ -465,9 +457,7 @@ async def delete_document(
         {"document_id": document_id, "title": document.title},
     )
 
-    logger.info(
-        "document_deleted", document_id=document_id, user_id=str(current_user.id)
-    )
+    logger.info("document_deleted", document_id=document_id, user_id=str(current_user.id))
     return DeleteDocumentResponse(message="Document deleted", document_id=document_id)
 
 
@@ -492,11 +482,7 @@ async def reupload_document(
     result = await db.execute(select(Document).where(Document.id == document_id))
     document = result.scalar_one_or_none()
 
-    if (
-        document is None
-        or not document.is_active
-        or document.status == DocumentStatus.DELETED
-    ):
+    if document is None or not document.is_active or document.status == DocumentStatus.DELETED:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found or already deleted",
@@ -519,16 +505,12 @@ async def reupload_document(
 
     # Save the new file to disk
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    save_path = os.path.join(
-        settings.UPLOAD_DIR, f"{document_id}_v{(document.version or 0) + 1}.{ext}"
-    )
+    save_path = os.path.join(settings.UPLOAD_DIR, f"{document_id}_v{(document.version or 0) + 1}.{ext}")
     async with aiofiles.open(save_path, "wb") as f:
         await f.write(content)
 
     # Hard-delete all existing chunks
-    await db.execute(
-        delete(DocumentChunk).where(DocumentChunk.document_id == document.id)
-    )
+    await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document.id))
 
     # Increment version and reset document state
     new_version = (document.version or 0) + 1
@@ -591,9 +573,7 @@ async def get_query_history(
 
     history = []
     for log in logs:
-        sources_result = await db.execute(
-            select(QuerySource).where(QuerySource.query_id == log.id)
-        )
+        sources_result = await db.execute(select(QuerySource).where(QuerySource.query_id == log.id))
         sources_count = len(sources_result.scalars().all())
         history.append(
             QueryHistoryItem(
@@ -615,8 +595,6 @@ async def get_query_history(
 
 def _sanitize_query(query: str) -> str:
     """Strip prompt injection attempts and normalize whitespace."""
-    import re
-
     query = re.sub(
         r"(ignore previous instructions|system prompt|<[^>]+>)",
         "",
@@ -652,8 +630,6 @@ async def _process_document(doc_id: str, file_path: str, file_type: str) -> None
 
             doc.status = DocumentStatus.INDEXED
             doc.chunk_count = chunk_count
-            from datetime import datetime
-
             doc.indexed_at = datetime.utcnow()
             await db.commit()
         except Exception as e:

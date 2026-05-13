@@ -66,9 +66,7 @@ class LLMGenerator:
         if self._anthropic_client is None:
             import anthropic
 
-            self._anthropic_client = anthropic.AsyncAnthropic(
-                api_key=settings.ANTHROPIC_API_KEY
-            )
+            self._anthropic_client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
         return self._anthropic_client
 
     def _build_context(self, sources: List[Dict[str, Any]]) -> str:
@@ -89,9 +87,7 @@ class LLMGenerator:
             parts.append(f"{header}\n{content}")
         return "\n\n---\n\n".join(parts)
 
-    def _build_messages(
-        self, query: str, sources: List[Dict[str, Any]]
-    ) -> List[Dict[str, str]]:
+    def _build_messages(self, query: str, sources: List[Dict[str, Any]]) -> List[Dict[str, str]]:
         context = self._build_context(sources)
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
@@ -112,9 +108,7 @@ class LLMGenerator:
         )
         return messages
 
-    def _build_system_with_history(
-        self, conversation_history: Optional[List[Dict[str, str]]] = None
-    ) -> str:
+    def _build_system_with_history(self, conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
         """Return the system prompt, optionally prepending prior session exchanges."""
         if not conversation_history:
             return SYSTEM_PROMPT
@@ -220,9 +214,7 @@ class LLMGenerator:
             async for text in stream.text_stream:
                 yield text
 
-    async def _openai_generate(
-        self, messages: List[Dict[str, Any]], max_tokens: int
-    ) -> Tuple[str, str]:
+    async def _openai_generate(self, messages: List[Dict[str, Any]], max_tokens: int) -> Tuple[str, str]:
         client = self._get_openai()
         response = await client.chat.completions.create(
             model=settings.OPENAI_LLM_MODEL,
@@ -232,9 +224,7 @@ class LLMGenerator:
         )
         return response.choices[0].message.content, settings.OPENAI_LLM_MODEL
 
-    async def _anthropic_generate(
-        self, messages: List[Dict[str, Any]], max_tokens: int
-    ) -> Tuple[str, str]:
+    async def _anthropic_generate(self, messages: List[Dict[str, Any]], max_tokens: int) -> Tuple[str, str]:
         client = self._get_anthropic()
         system = next((m["content"] for m in messages if m["role"] == "system"), "")
         user_messages = [m for m in messages if m["role"] != "system"]

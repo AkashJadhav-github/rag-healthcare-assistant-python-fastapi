@@ -64,9 +64,7 @@ def _ensure_test_db() -> None:
             port=int(_pg_port),
             database="postgres",
         )
-        exists = await conn.fetchval(
-            "SELECT 1 FROM pg_database WHERE datname = 'healthcare_rag_test'"
-        )
+        exists = await conn.fetchval("SELECT 1 FROM pg_database WHERE datname = 'healthcare_rag_test'")
         if not exists:
             await conn.execute("CREATE DATABASE healthcare_rag_test")
         await conn.close()
@@ -153,8 +151,6 @@ async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield db
 
     app.dependency_overrides[get_db] = override_get_db
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as c:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
     app.dependency_overrides.clear()

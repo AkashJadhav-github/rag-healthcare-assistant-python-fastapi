@@ -74,14 +74,10 @@ async def login(
             client_ip,
             {"username": form_data.username, "success": False},
         )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect credentials"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect credentials")
 
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Account disabled"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account disabled")
 
     user.last_login = datetime.now(timezone.utc)
     await db.commit()
@@ -92,9 +88,7 @@ async def login(
     auth_total.labels(status="success").inc()
     await _log_audit(db, user.id, AuditAction.LOGIN, client_ip, {"success": True})
 
-    return TokenResponse(
-        access_token=access_token, refresh_token=refresh_token, expires_in=1800
-    )
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token, expires_in=1800)
 
 
 @router.post("/refresh", response_model=RefreshResponse)
@@ -106,18 +100,14 @@ async def refresh_token(
 
     if payload.get("type") != "refresh":
         logger.warning("refresh_token_wrong_type", token_type=payload.get("type"))
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
     user_id = payload.get("sub")
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
 
     if not user or not user.is_active:
-        logger.warning(
-            "refresh_token_user_invalid", user_id=user_id, found=user is not None
-        )
+        logger.warning("refresh_token_user_invalid", user_id=user_id, found=user is not None)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

@@ -36,9 +36,7 @@ class CacheService:
             logger.warning("cache_get_failed", key=key, error=str(e))
         return None
 
-    async def set(
-        self, key: str, value: Any, ttl: int = settings.CACHE_TTL_SECONDS
-    ) -> bool:
+    async def set(self, key: str, value: Any, ttl: int = settings.CACHE_TTL_SECONDS) -> bool:
         try:
             c = await self.client()
             await c.set(key, json.dumps(value), ex=ttl)

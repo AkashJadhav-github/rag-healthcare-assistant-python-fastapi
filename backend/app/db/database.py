@@ -1,6 +1,7 @@
 from typing import AsyncGenerator
 
 import structlog
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
@@ -45,8 +46,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:  # pragma: no cover
     """Initialize database — create tables and pgvector extension."""
-    from sqlalchemy import text
-
     async with engine.begin() as conn:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
@@ -59,15 +58,11 @@ async def init_db() -> None:  # pragma: no cover
             )
         )
         await conn.execute(
-            text(
-                "CREATE INDEX IF NOT EXISTS idx_chunks_document_id "
-                "ON document_chunks(document_id)"
-            )
+            text("CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON document_chunks(document_id)")
         )
         await conn.execute(
             text(
-                "CREATE INDEX IF NOT EXISTS idx_documents_status "
-                "ON documents(status) WHERE is_active = true"
+                "CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status) WHERE is_active = true"
             )
         )
     logger.info("database_initialized")
@@ -75,8 +70,6 @@ async def init_db() -> None:  # pragma: no cover
 
 async def check_db_health() -> bool:
     try:
-        from sqlalchemy import text
-
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
         return True

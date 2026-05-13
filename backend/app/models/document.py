@@ -51,25 +51,17 @@ class Document(Base):
     category = Column(Enum(DocumentCategory), default=DocumentCategory.OTHER)
     source = Column(String(500))
     version = Column(Integer, default=1, server_default=text("1"), nullable=False)
-    status = Column(
-        Enum(DocumentStatus), default=DocumentStatus.PENDING, nullable=False, index=True
-    )
+    status = Column(Enum(DocumentStatus), default=DocumentStatus.PENDING, nullable=False, index=True)
     chunk_count = Column(Integer, default=0)
     error_message = Column(Text)
-    extra_metadata = Column("metadata", JSON, default={})
+    extra_metadata = Column("metadata", JSON, default=dict)
     is_active = Column(Boolean, default=True)
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False
-    )
-    updated_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
     indexed_at = Column(DateTime(timezone=True))
 
-    chunks = relationship(
-        "DocumentChunk", back_populates="document", cascade="all, delete-orphan"
-    )
+    chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<Document {self.title} status={self.status}>"
@@ -92,10 +84,8 @@ class DocumentChunk(Base):
     token_count = Column(Integer)
     page_number = Column(Integer)
     section = Column(String(500))
-    extra_metadata = Column("metadata", JSON, default={})
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False
-    )
+    extra_metadata = Column("metadata", JSON, default=dict)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
     document = relationship("Document", back_populates="chunks")
 

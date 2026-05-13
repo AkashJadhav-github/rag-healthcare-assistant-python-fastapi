@@ -72,9 +72,7 @@ class DocumentIngestionService:
         self.parser = DocumentParser()
         self.chunker = MedicalTextChunker()
 
-    async def ingest(
-        self, doc_id: str, file_path: str, file_type: str, db: AsyncSession
-    ) -> int:
+    async def ingest(self, doc_id: str, file_path: str, file_type: str, db: AsyncSession) -> int:
         """Full ingestion pipeline. Returns number of chunks created."""
         logger.info("ingestion_start", doc_id=doc_id, file_type=file_type)
 
@@ -93,9 +91,7 @@ class DocumentIngestionService:
         """Delete existing chunks and re-embed the document from stored content."""
         from app.models.document import DocumentChunk
 
-        await db.execute(
-            delete(DocumentChunk).where(DocumentChunk.document_id == doc_id)
-        )
+        await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == doc_id))
         await db.commit()
 
         from app.models.document import Document
@@ -111,9 +107,7 @@ class DocumentIngestionService:
 
         return await self.ingest(doc_id, tmp_path, doc.file_type, db)
 
-    async def _store_chunks(
-        self, doc_id: str, chunks: List[TextChunk], db: AsyncSession
-    ) -> None:
+    async def _store_chunks(self, doc_id: str, chunks: List[TextChunk], db: AsyncSession) -> None:
         texts = [c.content for c in chunks]
         embeddings = await embedding_service.embed_batch(texts)
 

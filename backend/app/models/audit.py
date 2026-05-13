@@ -45,11 +45,9 @@ class AuditLog(Base):
     request_path = Column(String(500))
     request_method = Column(String(10))
     status_code = Column(String(10))
-    details = Column(JSON, default={})
+    details = Column(JSON, default=dict)
     error_message = Column(Text)
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
-    )
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)
 
     user = relationship("User", back_populates="audit_logs")
 

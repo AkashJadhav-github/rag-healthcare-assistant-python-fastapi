@@ -69,9 +69,7 @@ async def reindex_documents(
         result = await db.execute(select(Document).where(Document.id == document_id))
         doc = result.scalar_one_or_none()
         if not doc:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
         docs_to_reindex = [doc]
     else:
         result = await db.execute(
@@ -120,9 +118,7 @@ async def create_user(
 
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
-        )
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
 
     user = User(
         email=payload.email,
@@ -159,17 +155,11 @@ async def get_stats(
 
     total_docs = (await db.execute(select(func.count(Document.id)))).scalar_one()
     indexed_docs = (
-        await db.execute(
-            select(func.count(Document.id)).where(
-                Document.status == DocumentStatus.INDEXED
-            )
-        )
+        await db.execute(select(func.count(Document.id)).where(Document.status == DocumentStatus.INDEXED))
     ).scalar_one()
     total_chunks = (await db.execute(select(func.count(DocumentChunk.id)))).scalar_one()
     total_queries = (await db.execute(select(func.count(QueryLog.id)))).scalar_one()
-    active_user_count = (
-        await db.execute(select(func.count(User.id)).where(User.is_active))
-    ).scalar_one()
+    active_user_count = (await db.execute(select(func.count(User.id)).where(User.is_active))).scalar_one()
 
     documents_indexed.set(indexed_docs)
     vector_store_size.set(total_chunks)
@@ -212,14 +202,10 @@ async def purge_expired_logs(
     audit_cutoff = now - timedelta(days=settings.AUDIT_LOG_RETENTION_DAYS)
     query_cutoff = now - timedelta(days=settings.QUERY_LOG_RETENTION_DAYS)
 
-    audit_result = await db.execute(
-        delete(AuditLog).where(AuditLog.created_at < audit_cutoff)
-    )
+    audit_result = await db.execute(delete(AuditLog).where(AuditLog.created_at < audit_cutoff))
     audit_deleted = audit_result.rowcount
 
-    query_result = await db.execute(
-        delete(QueryLog).where(QueryLog.created_at < query_cutoff)
-    )
+    query_result = await db.execute(delete(QueryLog).where(QueryLog.created_at < query_cutoff))
     query_deleted = query_result.rowcount
 
     purged_at = now.isoformat()
@@ -265,16 +251,12 @@ async def get_retention_stats(
 
     audit_total = (await db.execute(select(func.count(AuditLog.id)))).scalar_one()
     audit_expired = (
-        await db.execute(
-            select(func.count(AuditLog.id)).where(AuditLog.created_at < audit_cutoff)
-        )
+        await db.execute(select(func.count(AuditLog.id)).where(AuditLog.created_at < audit_cutoff))
     ).scalar_one()
 
     query_total = (await db.execute(select(func.count(QueryLog.id)))).scalar_one()
     query_expired = (
-        await db.execute(
-            select(func.count(QueryLog.id)).where(QueryLog.created_at < query_cutoff)
-        )
+        await db.execute(select(func.count(QueryLog.id)).where(QueryLog.created_at < query_cutoff))
     ).scalar_one()
 
     return RetentionStatsResponse(

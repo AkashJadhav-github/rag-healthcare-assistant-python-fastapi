@@ -34,9 +34,7 @@ class MedicalTextChunker:
         re.IGNORECASE | re.MULTILINE,
     )
 
-    def __init__(
-        self, chunk_size: int = 400, chunk_overlap: int = 80, model: str = "cl100k_base"
-    ):
+    def __init__(self, chunk_size: int = 400, chunk_overlap: int = 80, model: str = "cl100k_base"):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         try:

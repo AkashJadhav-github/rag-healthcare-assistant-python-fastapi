@@ -18,12 +18,8 @@ ingest_total = Counter(
     ["status", "file_type"],
     registry=registry,
 )
-auth_total = Counter(
-    "rag_auth_total", "Authentication attempts", ["status"], registry=registry
-)
-error_total = Counter(
-    "rag_errors_total", "Total errors", ["error_type"], registry=registry
-)
+auth_total = Counter("rag_auth_total", "Authentication attempts", ["status"], registry=registry)
+error_total = Counter("rag_errors_total", "Total errors", ["error_type"], registry=registry)
 
 # Histograms
 query_latency = Histogram(
@@ -53,12 +49,8 @@ llm_latency = Histogram(
 
 # Gauges
 active_users = Gauge("rag_active_users", "Currently active users", registry=registry)
-documents_indexed = Gauge(
-    "rag_documents_indexed_total", "Total indexed documents", registry=registry
-)
-vector_store_size = Gauge(
-    "rag_vector_store_chunks", "Number of vector chunks", registry=registry
-)
+documents_indexed = Gauge("rag_documents_indexed_total", "Total indexed documents", registry=registry)
+vector_store_size = Gauge("rag_vector_store_chunks", "Number of vector chunks", registry=registry)
 
 
 def track_query_latency(func):  # pragma: no cover

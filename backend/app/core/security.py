@@ -1,3 +1,4 @@
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -26,9 +27,7 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_access_token(
-    subject: str | Any, expires_delta: Optional[timedelta] = None
-) -> str:
+def create_access_token(subject: str | Any, expires_delta: Optional[timedelta] = None) -> str:
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
@@ -42,9 +41,7 @@ def create_access_token(
 
 
 def create_refresh_token(subject: str | Any) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-    )
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     payload = {
         "sub": str(subject),
         "exp": expire,
@@ -68,8 +65,6 @@ def decode_token(token: str) -> dict:
 
 def validate_password_strength(password: str) -> bool:
     """Enforce minimum 8 chars, uppercase, lowercase, digit, special char."""
-    import re
-
     if len(password) < 8:
         return False
     if not re.search(r"[A-Z]", password):

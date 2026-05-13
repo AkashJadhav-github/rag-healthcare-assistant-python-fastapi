@@ -1,4 +1,6 @@
 import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
 
 import structlog
@@ -84,9 +86,6 @@ app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
 
 @app.middleware("http")
 async def request_logger(request: Request, call_next):
-    import time
-    import uuid
-
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
     structlog.contextvars.clear_contextvars()
     structlog.contextvars.bind_contextvars(request_id=request_id)

@@ -43,15 +43,11 @@ class QueryLog(Base):
     token_count_completion = Column(Integer)
     was_cached = Column(Boolean, default=False)
     error = Column(Text)
-    extra_metadata = Column("metadata", JSON, default={})
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
-    )
+    extra_metadata = Column("metadata", JSON, default=dict)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)
 
     user = relationship("User", back_populates="queries")
-    sources = relationship(
-        "QuerySource", back_populates="query", cascade="all, delete-orphan"
-    )
+    sources = relationship("QuerySource", back_populates="query", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
         return f"<QueryLog {self.id} user={self.user_id}>"
@@ -81,9 +77,7 @@ class QuerySource(Base):
     chunk_content = Column(Text)
     similarity_score = Column(Float)
     rank = Column(Integer)
-    created_at = Column(
-        DateTime(timezone=True), default=datetime.utcnow, nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
     query = relationship("QueryLog", back_populates="sources")
 

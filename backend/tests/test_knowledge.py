@@ -7,9 +7,7 @@ from httpx import AsyncClient
 
 @pytest.mark.asyncio
 async def test_ask_requires_auth(client: AsyncClient):
-    response = await client.post(
-        "/api/v1/knowledge/ask", json={"query": "What is hypertension?"}
-    )
+    response = await client.post("/api/v1/knowledge/ask", json={"query": "What is hypertension?"})
     assert response.status_code == 403
 
 
@@ -25,9 +23,7 @@ async def test_ask_too_short_query(client: AsyncClient, clinician_token: str):
 
 @pytest.mark.asyncio
 @patch("app.api.v1.knowledge.RAGPipeline")
-async def test_ask_success(
-    mock_pipeline_class, client: AsyncClient, clinician_token: str
-):
+async def test_ask_success(mock_pipeline_class, client: AsyncClient, clinician_token: str):
     mock_pipeline = MagicMock()
     mock_pipeline.query = AsyncMock(
         return_value={
@@ -86,9 +82,7 @@ async def test_ingest_requires_permission(client: AsyncClient, admin_token: str)
 async def test_ingest_unsupported_format(client: AsyncClient, admin_token: str):
     response = await client.post(
         "/api/v1/knowledge/ingest",
-        files={
-            "file": ("test.exe", io.BytesIO(b"\x4d\x5a"), "application/octet-stream")
-        },
+        files={"file": ("test.exe", io.BytesIO(b"\x4d\x5a"), "application/octet-stream")},
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert response.status_code == 400
@@ -127,9 +121,7 @@ async def test_get_history_pagination(client: AsyncClient, clinician_token: str)
 
 @pytest.mark.asyncio
 @patch("app.api.v1.knowledge.RAGPipeline")
-async def test_ask_with_session_id(
-    mock_pipeline_class, client: AsyncClient, clinician_token: str
-):
+async def test_ask_with_session_id(mock_pipeline_class, client: AsyncClient, clinician_token: str):
     """POST /knowledge/ask with a session_id should return 200 and expected fields."""
     mock_pipeline = MagicMock()
     mock_pipeline.query = AsyncMock(

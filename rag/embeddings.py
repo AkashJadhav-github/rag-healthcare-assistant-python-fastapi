@@ -6,6 +6,7 @@ Includes Redis-backed caching and batch processing.
 import asyncio
 import os
 import sys
+import time
 from typing import List, Optional
 
 import structlog
@@ -13,6 +14,8 @@ import structlog
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../backend"))
 
 from app.config import settings
+from app.services.cache import cache_service
+from app.services.metrics import embedding_latency
 
 logger = structlog.get_logger()
 
@@ -38,8 +41,6 @@ class EmbeddingService:
 
     async def embed_text(self, text: str, use_cache: bool = True) -> List[float]:
         """Embed a single text with optional Redis caching."""
-        from app.services.cache import cache_service
-
         cache_key = cache_service.make_embedding_key(text)
 
         if use_cache:
@@ -54,13 +55,9 @@ class EmbeddingService:
 
         return embedding
 
-    async def embed_batch(
-        self, texts: List[str], batch_size: int = 50
-    ) -> List[List[float]]:
+    async def embed_batch(self, texts: List[str], batch_size: int = 50) -> List[List[float]]:
         """Batch embed texts for efficient indexing."""
         results: List[Optional[List[float]]] = [None] * len(texts)
-
-        from app.services.cache import cache_service
 
         uncached_indices = []
         for i, text in enumerate(texts):
@@ -94,10 +91,6 @@ class EmbeddingService:
         return await self._local_embed(texts)
 
     async def _openai_embed(self, texts: List[str]) -> List[List[float]]:
-        import time
-
-        from app.services.metrics import embedding_latency
-
         client = self._get_openai_client()
         t0 = time.time()
         try:

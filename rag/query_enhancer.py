@@ -134,8 +134,7 @@ class MedicalQueryEnhancer:
                 q.strip()
                 for q in connectors
                 if len(q.strip()) > 10
-                and q.lower()
-                not in ("and", "also", "additionally", "furthermore", "what about")
+                and q.lower() not in ("and", "also", "additionally", "furthermore", "what about")
             ]
         return sub_queries or [query]
 
