@@ -1,11 +1,9 @@
-version: "3.9"
-
 services:
   # ─── Backend API ───────────────────────────────────────────────────────────
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: rag-api
     ports:
       - "8000:8000"
@@ -24,10 +22,18 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
-      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+      - ALLOWED_ORIGINS=["http://localhost:3000","http://localhost:8080"]
       - JAEGER_HOST=jaeger
+      - HF_HOME=/tmp/hf_cache
+      - SENTENCE_TRANSFORMERS_HOME=/tmp/hf_cache
+      - VECTOR_DIMENSION=384
+      - ANTHROPIC_MODEL=claude-sonnet-4-6
+      - SIMILARITY_THRESHOLD=0.1
     volumes:
       - ./backend:/app
+      - ./rag:/app/rag
+      - ./scripts:/app/scripts
+      - ./sample_data:/app/sample_data
       - upload_data:/tmp/healthcare_uploads
     depends_on:
       postgres:
@@ -65,7 +71,7 @@ services:
     image: redis:7-alpine
     container_name: rag-redis
     ports:
-      - "6379:6379"
+      - "6381:6379"
     command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
@@ -101,7 +107,7 @@ services:
     image: grafana/grafana:10.4.0
     container_name: rag-grafana
     ports:
-      - "3001:3000"
+      - "3002:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false

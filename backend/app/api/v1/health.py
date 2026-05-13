@@ -8,7 +8,9 @@ from pydantic import BaseModel
 
 from ...db.database import check_db_health
 from ...services.cache import cache_service
-from ...services.metrics import CONTENT_TYPE_LATEST, generate_latest, registry
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
+from ...services.metrics import registry
 
 logger = structlog.get_logger()
 router = APIRouter()

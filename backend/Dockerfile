@@ -9,15 +9,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 FROM base AS deps
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 FROM deps AS runtime
-COPY . .
+COPY backend/ .
+COPY rag/ ./rag/
 
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 RUN chown -R appuser:appgroup /app
+RUN mkdir -p /tmp/healthcare_uploads /tmp/hf_cache && chown appuser:appgroup /tmp/healthcare_uploads /tmp/hf_cache
 USER appuser
 
 ENV PYTHONPATH=/app

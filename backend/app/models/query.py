@@ -29,7 +29,7 @@ class QueryLog(Base):
     token_count_completion = Column(Integer)
     was_cached = Column(Boolean, default=False)
     error = Column(Text)
-    metadata = Column(JSON, default={})
+    extra_metadata = Column("metadata", JSON, default={})
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)
 
     user = relationship("User", back_populates="queries")

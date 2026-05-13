@@ -42,7 +42,7 @@ class Document(Base):
     status = Column(Enum(DocumentStatus), default=DocumentStatus.PENDING, nullable=False, index=True)
     chunk_count = Column(Integer, default=0)
     error_message = Column(Text)
-    metadata = Column(JSON, default={})
+    extra_metadata = Column("metadata", JSON, default={})
     is_active = Column(Boolean, default=True)
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
@@ -69,7 +69,7 @@ class DocumentChunk(Base):
     token_count = Column(Integer)
     page_number = Column(Integer)
     section = Column(String(500))
-    metadata = Column(JSON, default={})
+    extra_metadata = Column("metadata", JSON, default={})
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
 
     document = relationship("Document", back_populates="chunks")

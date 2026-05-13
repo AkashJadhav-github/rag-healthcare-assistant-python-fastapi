@@ -20,7 +20,7 @@ SAMPLE_DOCS = [
 
 
 async def main():
-    async with httpx.AsyncClient(base_url=API_BASE, timeout=60) as client:
+    async with httpx.AsyncClient(base_url=API_BASE, timeout=300) as client:
         print("Logging in...")
         r = await client.post("/auth/login", data={"username": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
         r.raise_for_status()

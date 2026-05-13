@@ -113,7 +113,7 @@ async def ask_question(
         return AskResponse(**cached_result)
 
     try:
-        from ....rag.pipeline import RAGPipeline
+        from rag.pipeline import RAGPipeline
 
         pipeline = RAGPipeline()
         result = await pipeline.query(

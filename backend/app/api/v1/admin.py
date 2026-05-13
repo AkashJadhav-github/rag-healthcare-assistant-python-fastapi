@@ -70,7 +70,10 @@ async def reindex_documents(
         docs_to_reindex = [doc]
     else:
         result = await db.execute(
-            select(Document).where(Document.status == DocumentStatus.INDEXED, Document.is_active)
+            select(Document).where(
+                Document.status.in_([DocumentStatus.INDEXED, DocumentStatus.FAILED]),
+                Document.is_active,
+            )
         )
         docs_to_reindex = result.scalars().all()
 

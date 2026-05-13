@@ -89,12 +89,12 @@ class DocumentIngestionService:
 
     async def reindex_document(self, doc_id: str, db: AsyncSession) -> int:
         """Delete existing chunks and re-embed the document from stored content."""
-        from backend.app.models.document import DocumentChunk
+        from app.models.document import DocumentChunk
 
         await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == doc_id))
         await db.commit()
 
-        from backend.app.models.document import Document
+        from app.models.document import Document
 
         result = await db.execute(select(Document).where(Document.id == doc_id))
         doc = result.scalar_one_or_none()
@@ -113,7 +113,7 @@ class DocumentIngestionService:
 
         import uuid
 
-        from backend.app.models.document import DocumentChunk
+        from app.models.document import DocumentChunk
 
         chunk_objects = []
         for chunk, embedding in zip(chunks, embeddings):
@@ -128,7 +128,7 @@ class DocumentIngestionService:
                 token_count=chunk.token_count,
                 page_number=chunk.page_number,
                 section=chunk.section,
-                metadata=chunk.metadata or {},
+                extra_metadata=chunk.metadata or {},
             )
             chunk_objects.append(obj)
 

@@ -106,16 +106,16 @@ class HybridRetriever:
         query_sql = (
             "SELECT dc.id::text AS chunk_id, dc.document_id::text,"
             " d.title AS document_title, dc.content,"
-            " 1 - (dc.embedding <=> :embedding::vector) AS similarity_score,"
+            " 1 - (dc.embedding <=> CAST(:embedding AS vector)) AS similarity_score,"
             " dc.page_number, dc.section"
             " FROM document_chunks dc"
             " JOIN documents d ON d.id = dc.document_id"
-            " WHERE d.status = 'indexed' AND d.is_active = true"
+            " WHERE d.status = 'INDEXED' AND d.is_active = true"
         )
         if document_ids:
             query_sql += " AND dc.document_id = ANY(:doc_ids)"
             params["doc_ids"] = document_ids
-        query_sql += " ORDER BY dc.embedding <=> :embedding::vector LIMIT :k"
+        query_sql += " ORDER BY dc.embedding <=> CAST(:embedding AS vector) LIMIT :k"
         sql = text(query_sql)
 
         result = await db.execute(sql, params)
@@ -149,7 +149,7 @@ class HybridRetriever:
             " dc.page_number, dc.section"
             " FROM document_chunks dc"
             " JOIN documents d ON d.id = dc.document_id"
-            " WHERE d.status = 'indexed'"
+            " WHERE d.status = 'INDEXED'"
             " AND d.is_active = true"
             " AND similarity(dc.content, :query) > 0.1"
         )

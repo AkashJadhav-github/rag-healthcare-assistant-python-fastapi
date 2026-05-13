@@ -83,8 +83,8 @@ class EmbeddingService:
 
     async def _generate_embedding(self, text: str) -> List[float]:
         if settings.EMBEDDING_PROVIDER == "openai" and settings.OPENAI_API_KEY:
-            return await self._openai_embed([text])[0]
-        return await self._local_embed([text])[0]
+            return (await self._openai_embed([text]))[0]
+        return (await self._local_embed([text]))[0]
 
     async def _generate_batch(self, texts: List[str]) -> List[List[float]]:
         if settings.EMBEDDING_PROVIDER == "openai" and settings.OPENAI_API_KEY:
