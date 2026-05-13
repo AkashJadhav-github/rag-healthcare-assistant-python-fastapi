@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-this-in-production-use-256-bit-key"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-    ALGORITHM: str = "HS256"
+    ALGORITHM: str = "RS256"
+    JWT_PRIVATE_KEY: str = ""
+    JWT_PUBLIC_KEY: str = ""
 
     # CORS
     ALLOWED_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"]

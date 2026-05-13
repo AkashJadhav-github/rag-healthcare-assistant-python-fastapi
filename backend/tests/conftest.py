@@ -2,13 +2,30 @@ import os
 from typing import AsyncGenerator
 
 import pytest_asyncio
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
+# Generate a fresh RSA-2048 key pair for the test session
+_test_rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+_test_private_pem = _test_rsa_key.private_bytes(
+    encoding=serialization.Encoding.PEM,
+    format=serialization.PrivateFormat.PKCS8,
+    encryption_algorithm=serialization.NoEncryption(),
+).decode()
+_test_public_pem = _test_rsa_key.public_key().public_bytes(
+    encoding=serialization.Encoding.PEM,
+    format=serialization.PublicFormat.SubjectPublicKeyInfo,
+).decode()
+
 os.environ["ENVIRONMENT"] = "test"
 os.environ["POSTGRES_DB"] = "healthcare_rag_test"
 os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-32chars"
+os.environ["ALGORITHM"] = "RS256"
+os.environ["JWT_PRIVATE_KEY"] = _test_private_pem
+os.environ["JWT_PUBLIC_KEY"] = _test_public_pem
 
 from app.core.security import create_access_token, hash_password
 from app.db.database import Base, get_db

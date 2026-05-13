@@ -22,6 +22,9 @@ services:
       - LLM_PROVIDER=${LLM_PROVIDER:-openai}
       - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openai}
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - ALGORITHM=RS256
+      - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY}
+      - JWT_PUBLIC_KEY=${JWT_PUBLIC_KEY}
       - ALLOWED_ORIGINS=["http://localhost:3000","http://localhost:8080"]
       - JAEGER_HOST=jaeger
       - HF_HOME=/tmp/hf_cache
