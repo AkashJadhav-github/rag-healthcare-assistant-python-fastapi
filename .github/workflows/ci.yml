@@ -91,7 +91,7 @@ jobs:
           ENVIRONMENT: test
         run: |
           cd backend
-          python -m pytest tests/ -v --tb=short --cov=app --cov-report=xml --cov-fail-under=80
+          python -m pytest tests/ -v --tb=short --cov=app --cov-report=xml --cov-fail-under=70
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

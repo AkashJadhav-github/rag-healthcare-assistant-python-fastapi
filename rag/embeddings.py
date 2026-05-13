@@ -54,7 +54,9 @@ class EmbeddingService:
 
         return embedding
 
-    async def embed_batch(self, texts: List[str], batch_size: int = 50) -> List[List[float]]:
+    async def embed_batch(
+        self, texts: List[str], batch_size: int = 50
+    ) -> List[List[float]]:
         """Batch embed texts for efficient indexing."""
         results: List[Optional[List[float]]] = [None] * len(texts)
 

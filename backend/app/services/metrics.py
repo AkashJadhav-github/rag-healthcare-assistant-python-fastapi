@@ -6,12 +6,24 @@ from prometheus_client import CollectorRegistry, Counter, Gauge, Histogram
 registry = CollectorRegistry(auto_describe=True)
 
 # Counters
-query_total = Counter("rag_queries_total", "Total number of queries", ["status", "cached"], registry=registry)
-ingest_total = Counter(
-    "rag_ingest_total", "Total document ingestion requests", ["status", "file_type"], registry=registry
+query_total = Counter(
+    "rag_queries_total",
+    "Total number of queries",
+    ["status", "cached"],
+    registry=registry,
 )
-auth_total = Counter("rag_auth_total", "Authentication attempts", ["status"], registry=registry)
-error_total = Counter("rag_errors_total", "Total errors", ["error_type"], registry=registry)
+ingest_total = Counter(
+    "rag_ingest_total",
+    "Total document ingestion requests",
+    ["status", "file_type"],
+    registry=registry,
+)
+auth_total = Counter(
+    "rag_auth_total", "Authentication attempts", ["status"], registry=registry
+)
+error_total = Counter(
+    "rag_errors_total", "Total errors", ["error_type"], registry=registry
+)
 
 # Histograms
 query_latency = Histogram(
@@ -41,8 +53,12 @@ llm_latency = Histogram(
 
 # Gauges
 active_users = Gauge("rag_active_users", "Currently active users", registry=registry)
-documents_indexed = Gauge("rag_documents_indexed_total", "Total indexed documents", registry=registry)
-vector_store_size = Gauge("rag_vector_store_chunks", "Number of vector chunks", registry=registry)
+documents_indexed = Gauge(
+    "rag_documents_indexed_total", "Total indexed documents", registry=registry
+)
+vector_store_size = Gauge(
+    "rag_vector_store_chunks", "Number of vector chunks", registry=registry
+)
 
 
 def track_query_latency(func):

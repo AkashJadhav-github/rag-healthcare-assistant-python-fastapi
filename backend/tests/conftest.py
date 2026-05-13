@@ -15,10 +15,14 @@ _test_private_pem = _test_rsa_key.private_bytes(
     format=serialization.PrivateFormat.PKCS8,
     encryption_algorithm=serialization.NoEncryption(),
 ).decode()
-_test_public_pem = _test_rsa_key.public_key().public_bytes(
-    encoding=serialization.Encoding.PEM,
-    format=serialization.PublicFormat.SubjectPublicKeyInfo,
-).decode()
+_test_public_pem = (
+    _test_rsa_key.public_key()
+    .public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    .decode()
+)
 
 os.environ["ENVIRONMENT"] = "test"
 os.environ["POSTGRES_DB"] = "healthcare_rag_test"
@@ -27,10 +31,10 @@ os.environ["ALGORITHM"] = "RS256"
 os.environ["JWT_PRIVATE_KEY"] = _test_private_pem
 os.environ["JWT_PUBLIC_KEY"] = _test_public_pem
 
-from app.core.security import create_access_token, hash_password
-from app.db.database import Base, get_db
-from app.main import app
-from app.models.user import User, UserRole
+from app.core.security import create_access_token, hash_password  # noqa: E402
+from app.db.database import Base, get_db  # noqa: E402
+from app.main import app  # noqa: E402
+from app.models.user import User, UserRole  # noqa: E402
 
 _pg_host = os.getenv("POSTGRES_HOST", "localhost")
 _pg_port = os.getenv("POSTGRES_PORT", "5432")
@@ -41,15 +45,22 @@ TEST_DB_URL = os.getenv(
     f"postgresql+asyncpg://{_pg_user}:{_pg_pass}@{_pg_host}:{_pg_port}/healthcare_rag_test",
 )
 
+
 def _ensure_test_db() -> None:
     import asyncio
     import asyncpg
 
     async def _create():
         conn = await asyncpg.connect(
-            user=_pg_user, password=_pg_pass, host=_pg_host, port=int(_pg_port), database="healthcare_rag"
+            user=_pg_user,
+            password=_pg_pass,
+            host=_pg_host,
+            port=int(_pg_port),
+            database="healthcare_rag",
         )
-        exists = await conn.fetchval("SELECT 1 FROM pg_database WHERE datname = 'healthcare_rag_test'")
+        exists = await conn.fetchval(
+            "SELECT 1 FROM pg_database WHERE datname = 'healthcare_rag_test'"
+        )
         if not exists:
             await conn.execute("CREATE DATABASE healthcare_rag_test")
         await conn.close()
@@ -136,6 +147,8 @@ async def client(db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield db
 
     app.dependency_overrides[get_db] = override_get_db
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as c:
         yield c
     app.dependency_overrides.clear()

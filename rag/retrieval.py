@@ -85,8 +85,12 @@ class HybridRetriever:
                 ):
                     all_results[r.chunk_id] = r
 
-        results = sorted(all_results.values(), key=lambda x: x.similarity_score, reverse=True)[:k]
-        filtered = [r for r in results if r.similarity_score >= self.similarity_threshold]
+        results = sorted(
+            all_results.values(), key=lambda x: x.similarity_score, reverse=True
+        )[:k]
+        filtered = [
+            r for r in results if r.similarity_score >= self.similarity_threshold
+        ]
 
         retrieval_latency.observe(time.time() - t0)
         logger.info("retrieval_complete", query_len=len(query), results=len(filtered))
@@ -191,11 +195,15 @@ class HybridRetriever:
         index: Dict[str, RetrievalResult] = {}
 
         for rank, result in enumerate(semantic, start=1):
-            scores[result.chunk_id] = scores.get(result.chunk_id, 0) + 1 / (rrf_k + rank)
+            scores[result.chunk_id] = scores.get(result.chunk_id, 0) + 1 / (
+                rrf_k + rank
+            )
             index[result.chunk_id] = result
 
         for rank, result in enumerate(keyword, start=1):
-            scores[result.chunk_id] = scores.get(result.chunk_id, 0) + 1 / (rrf_k + rank)
+            scores[result.chunk_id] = scores.get(result.chunk_id, 0) + 1 / (
+                rrf_k + rank
+            )
             if result.chunk_id not in index:
                 index[result.chunk_id] = result
 

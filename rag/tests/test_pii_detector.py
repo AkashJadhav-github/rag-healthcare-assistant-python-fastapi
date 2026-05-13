@@ -48,7 +48,12 @@ def test_contains_phi_true(detector):
 
 
 def test_contains_phi_false(detector):
-    assert detector.contains_phi("Normal clinical text about diabetes management guidelines.") is False
+    assert (
+        detector.contains_phi(
+            "Normal clinical text about diabetes management guidelines."
+        )
+        is False
+    )
 
 
 def test_query_masking(detector):

@@ -26,17 +26,31 @@ def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def create_access_token(subject: str | Any, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(
+    subject: str | Any, expires_delta: Optional[timedelta] = None
+) -> str:
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    payload = {"sub": str(subject), "exp": expire, "iat": datetime.now(timezone.utc), "type": "access"}
+    payload = {
+        "sub": str(subject),
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+        "type": "access",
+    }
     return jwt.encode(payload, _private_key(), algorithm=settings.ALGORITHM)
 
 
 def create_refresh_token(subject: str | Any) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    payload = {"sub": str(subject), "exp": expire, "iat": datetime.now(timezone.utc), "type": "refresh"}
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+    )
+    payload = {
+        "sub": str(subject),
+        "exp": expire,
+        "iat": datetime.now(timezone.utc),
+        "type": "refresh",
+    }
     return jwt.encode(payload, _private_key(), algorithm=settings.ALGORITHM)
 
 

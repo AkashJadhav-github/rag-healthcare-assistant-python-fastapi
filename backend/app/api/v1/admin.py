@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import List, Optional
 
 import structlog
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
@@ -69,7 +69,9 @@ async def reindex_documents(
         result = await db.execute(select(Document).where(Document.id == document_id))
         doc = result.scalar_one_or_none()
         if not doc:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Document not found"
+            )
         docs_to_reindex = [doc]
     else:
         result = await db.execute(
@@ -118,7 +120,9 @@ async def create_user(
 
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Email already registered"
+        )
 
     user = User(
         email=payload.email,
@@ -155,11 +159,17 @@ async def get_stats(
 
     total_docs = (await db.execute(select(func.count(Document.id)))).scalar_one()
     indexed_docs = (
-        await db.execute(select(func.count(Document.id)).where(Document.status == DocumentStatus.INDEXED))
+        await db.execute(
+            select(func.count(Document.id)).where(
+                Document.status == DocumentStatus.INDEXED
+            )
+        )
     ).scalar_one()
     total_chunks = (await db.execute(select(func.count(DocumentChunk.id)))).scalar_one()
     total_queries = (await db.execute(select(func.count(QueryLog.id)))).scalar_one()
-    active_user_count = (await db.execute(select(func.count(User.id)).where(User.is_active))).scalar_one()
+    active_user_count = (
+        await db.execute(select(func.count(User.id)).where(User.is_active))
+    ).scalar_one()
 
     documents_indexed.set(indexed_docs)
     vector_store_size.set(total_chunks)
@@ -282,7 +292,7 @@ async def get_retention_stats(
     )
 
 
-async def _run_reindex(doc_ids: list[str]) -> None:
+async def _run_reindex(doc_ids: List[str]) -> None:
     from app.db.database import AsyncSessionLocal
     from rag.ingestion import DocumentIngestionService
 

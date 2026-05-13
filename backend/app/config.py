@@ -112,7 +112,7 @@ class Settings(BaseSettings):
     ENCRYPTION_KEY: Optional[str] = None
 
     # Data Retention
-    AUDIT_LOG_RETENTION_DAYS: int = 2190   # 6 years
+    AUDIT_LOG_RETENTION_DAYS: int = 2190  # 6 years
     QUERY_LOG_RETENTION_DAYS: int = 90
 
     class Config:

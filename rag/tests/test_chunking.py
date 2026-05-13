@@ -27,7 +27,9 @@ def test_short_text_single_chunk():
 
 def test_overlap_preserves_context():
     chunker = MedicalTextChunker(chunk_size=50, chunk_overlap=20)
-    sentences = ["First sentence about diabetes. "] * 10 + ["Last sentence about hypertension. "] * 10
+    sentences = ["First sentence about diabetes. "] * 10 + [
+        "Last sentence about hypertension. "
+    ] * 10
     text = "".join(sentences)
     chunks = chunker.chunk(text)
     # With overlap, words from the end of one chunk appear at start of next

@@ -1,7 +1,17 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -14,7 +24,10 @@ class QueryLog(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     session_id = Column(String(100), index=True)
     query_text = Column(EncryptedString, nullable=False)
@@ -31,10 +44,14 @@ class QueryLog(Base):
     was_cached = Column(Boolean, default=False)
     error = Column(Text)
     extra_metadata = Column("metadata", JSON, default={})
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
+    )
 
     user = relationship("User", back_populates="queries")
-    sources = relationship("QuerySource", back_populates="query", cascade="all, delete-orphan")
+    sources = relationship(
+        "QuerySource", back_populates="query", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<QueryLog {self.id} user={self.user_id}>"
@@ -45,17 +62,28 @@ class QuerySource(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     query_id = Column(
-        UUID(as_uuid=True), ForeignKey("query_logs.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("query_logs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
-    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="SET NULL"), nullable=True)
+    document_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     chunk_id = Column(
-        UUID(as_uuid=True), ForeignKey("document_chunks.id", ondelete="SET NULL"), nullable=True
+        UUID(as_uuid=True),
+        ForeignKey("document_chunks.id", ondelete="SET NULL"),
+        nullable=True,
     )
     document_title = Column(String(500))
     chunk_content = Column(Text)
     similarity_score = Column(Float)
     rank = Column(Integer)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
 
     query = relationship("QueryLog", back_populates="sources")
 

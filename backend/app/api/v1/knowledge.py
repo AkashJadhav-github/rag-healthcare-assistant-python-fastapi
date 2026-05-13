@@ -3,7 +3,7 @@ import json
 import os
 import time
 import uuid
-from typing import AsyncGenerator, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional, Union
 
 import aiofiles
 import structlog
@@ -110,7 +110,7 @@ async def ask_question(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_permission(Permission.QUERY)),
     client_ip: str = Depends(get_client_ip),
-):
+) -> Union[StreamingResponse, AskResponse]:
     """Submit a query and receive a response with source citations."""
     start_time = time.time()
 
@@ -139,6 +139,7 @@ async def ask_question(
 
     # ── Feature 3: streaming path ─────────────────────────────────────────────
     if request_body.stream:
+
         async def event_generator() -> AsyncGenerator[str, None]:
             if cached_result:
                 query_total.labels(status="success", cached="true").inc()
@@ -162,7 +163,7 @@ async def ask_question(
 
                 pipeline = RAGPipeline()
 
-                final_meta: dict = {}
+                final_meta: Dict[str, Any] = {}
                 accumulated_answer: List[str] = []
 
                 async for chunk_dict in pipeline.query_stream(
@@ -240,7 +241,9 @@ async def ask_question(
                 )
 
             except Exception as e:
-                logger.error("stream_query_failed", error=str(e), user_id=str(current_user.id))
+                logger.error(
+                    "stream_query_failed", error=str(e), user_id=str(current_user.id)
+                )
                 query_total.labels(status="error", cached="false").inc()
                 yield f"data: {json.dumps({'error': 'Query processing failed', 'done': True})}\n\n"
 
@@ -251,7 +254,11 @@ async def ask_question(
         query_total.labels(status="success", cached="true").inc()
         cached_result["was_cached"] = True
         await _log_audit(
-            db, current_user.id, AuditAction.QUERY, client_ip, {"query_hash": query_hash, "cached": True}
+            db,
+            current_user.id,
+            AuditAction.QUERY,
+            client_ip,
+            {"query_hash": query_hash, "cached": True},
         )
         return AskResponse(**cached_result)
 
@@ -323,14 +330,21 @@ async def ask_question(
         query_total.labels(status="success", cached="false").inc()
         query_latency.observe(time.time() - start_time)
 
-        await _log_audit(db, current_user.id, AuditAction.QUERY, client_ip, {"query_hash": query_hash})
+        await _log_audit(
+            db,
+            current_user.id,
+            AuditAction.QUERY,
+            client_ip,
+            {"query_hash": query_hash},
+        )
         return response
 
     except Exception as e:
         logger.error("query_failed", error=str(e), user_id=str(current_user.id))
         query_total.labels(status="error", cached="false").inc()
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Query processing failed"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Query processing failed",
         )
 
 
@@ -416,21 +430,29 @@ async def delete_document(
     result = await db.execute(select(Document).where(Document.id == document_id))
     document = result.scalar_one_or_none()
 
-    if document is None or not document.is_active or document.status == DocumentStatus.DELETED:
+    if (
+        document is None
+        or not document.is_active
+        or document.status == DocumentStatus.DELETED
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found or already deleted",
         )
 
     # Non-admins may only delete their own documents
-    if current_user.role != UserRole.ADMIN and str(document.uploaded_by) != str(current_user.id):
+    if current_user.role != UserRole.ADMIN and str(document.uploaded_by) != str(
+        current_user.id
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You do not have permission to delete this document",
         )
 
     # Hard-delete all chunks
-    await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document.id))
+    await db.execute(
+        delete(DocumentChunk).where(DocumentChunk.document_id == document.id)
+    )
 
     # Soft-delete the document
     document.is_active = False
@@ -446,11 +468,17 @@ async def delete_document(
         {"document_id": document_id, "title": document.title},
     )
 
-    logger.info("document_deleted", document_id=document_id, user_id=str(current_user.id))
+    logger.info(
+        "document_deleted", document_id=document_id, user_id=str(current_user.id)
+    )
     return DeleteDocumentResponse(message="Document deleted", document_id=document_id)
 
 
-@router.put("/documents/{document_id}/reupload", response_model=ReuploadDocumentResponse, status_code=status.HTTP_202_ACCEPTED)
+@router.put(
+    "/documents/{document_id}/reupload",
+    response_model=ReuploadDocumentResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
 async def reupload_document(
     document_id: str,
     background_tasks: BackgroundTasks,
@@ -467,7 +495,11 @@ async def reupload_document(
     result = await db.execute(select(Document).where(Document.id == document_id))
     document = result.scalar_one_or_none()
 
-    if document is None or not document.is_active or document.status == DocumentStatus.DELETED:
+    if (
+        document is None
+        or not document.is_active
+        or document.status == DocumentStatus.DELETED
+    ):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found or already deleted",
@@ -490,12 +522,16 @@ async def reupload_document(
 
     # Save the new file to disk
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    save_path = os.path.join(settings.UPLOAD_DIR, f"{document_id}_v{(document.version or 0) + 1}.{ext}")
+    save_path = os.path.join(
+        settings.UPLOAD_DIR, f"{document_id}_v{(document.version or 0) + 1}.{ext}"
+    )
     async with aiofiles.open(save_path, "wb") as f:
         await f.write(content)
 
     # Hard-delete all existing chunks
-    await db.execute(delete(DocumentChunk).where(DocumentChunk.document_id == document.id))
+    await db.execute(
+        delete(DocumentChunk).where(DocumentChunk.document_id == document.id)
+    )
 
     # Increment version and reset document state
     new_version = (document.version or 0) + 1
@@ -518,10 +554,19 @@ async def reupload_document(
         current_user.id,
         AuditAction.REINDEX,
         client_ip,
-        {"document_id": document_id, "new_version": new_version, "filename": file.filename},
+        {
+            "document_id": document_id,
+            "new_version": new_version,
+            "filename": file.filename,
+        },
     )
 
-    logger.info("document_reupload_queued", document_id=document_id, version=new_version, user_id=str(current_user.id))
+    logger.info(
+        "document_reupload_queued",
+        document_id=document_id,
+        version=new_version,
+        user_id=str(current_user.id),
+    )
     return ReuploadDocumentResponse(
         message="Document queued for reprocessing",
         document_id=document_id,
@@ -549,7 +594,9 @@ async def get_query_history(
 
     history = []
     for log in logs:
-        sources_result = await db.execute(select(QuerySource).where(QuerySource.query_id == log.id))
+        sources_result = await db.execute(
+            select(QuerySource).where(QuerySource.query_id == log.id)
+        )
         sources_count = len(sources_result.scalars().all())
         history.append(
             QueryHistoryItem(
@@ -573,7 +620,12 @@ def _sanitize_query(query: str) -> str:
     """Strip prompt injection attempts and normalize whitespace."""
     import re
 
-    query = re.sub(r"(ignore previous instructions|system prompt|<[^>]+>)", "", query, flags=re.IGNORECASE)
+    query = re.sub(
+        r"(ignore previous instructions|system prompt|<[^>]+>)",
+        "",
+        query,
+        flags=re.IGNORECASE,
+    )
     query = " ".join(query.split())
     return query[:2000]
 
@@ -620,7 +672,13 @@ async def _process_document(doc_id: str, file_path: str, file_type: str) -> None
                 os.remove(file_path)
 
 
-async def _log_audit(db: AsyncSession, user_id, action: AuditAction, ip: str, details: dict) -> None:
+async def _log_audit(
+    db: AsyncSession,
+    user_id: Any,
+    action: AuditAction,
+    ip: str,
+    details: Dict[str, Any],
+) -> None:
     try:
         log = AuditLog(user_id=user_id, action=action, ip_address=ip, details=details)
         db.add(log)

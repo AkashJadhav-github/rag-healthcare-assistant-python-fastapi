@@ -3,7 +3,18 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Text, text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -40,17 +51,25 @@ class Document(Base):
     category = Column(Enum(DocumentCategory), default=DocumentCategory.OTHER)
     source = Column(String(500))
     version = Column(Integer, default=1, server_default=text("1"), nullable=False)
-    status = Column(Enum(DocumentStatus), default=DocumentStatus.PENDING, nullable=False, index=True)
+    status = Column(
+        Enum(DocumentStatus), default=DocumentStatus.PENDING, nullable=False, index=True
+    )
     chunk_count = Column(Integer, default=0)
     error_message = Column(Text)
     extra_metadata = Column("metadata", JSON, default={})
     is_active = Column(Boolean, default=True)
     uploaded_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow
+    )
     indexed_at = Column(DateTime(timezone=True))
 
-    chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
+    chunks = relationship(
+        "DocumentChunk", back_populates="document", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Document {self.title} status={self.status}>"
@@ -61,7 +80,10 @@ class DocumentChunk(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     document_id = Column(
-        UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     chunk_index = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
@@ -71,7 +93,9 @@ class DocumentChunk(Base):
     page_number = Column(Integer)
     section = Column(String(500))
     extra_metadata = Column("metadata", JSON, default={})
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False
+    )
 
     document = relationship("Document", back_populates="chunks")
 

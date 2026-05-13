@@ -51,19 +51,25 @@ async def init_db() -> None:
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
         await conn.run_sync(Base.metadata.create_all)
-        await conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS idx_chunks_embedding_hnsw "
-            "ON document_chunks USING hnsw (embedding vector_cosine_ops) "
-            "WITH (m = 16, ef_construction = 64)"
-        ))
-        await conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS idx_chunks_document_id "
-            "ON document_chunks(document_id)"
-        ))
-        await conn.execute(text(
-            "CREATE INDEX IF NOT EXISTS idx_documents_status "
-            "ON documents(status) WHERE is_active = true"
-        ))
+        await conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS idx_chunks_embedding_hnsw "
+                "ON document_chunks USING hnsw (embedding vector_cosine_ops) "
+                "WITH (m = 16, ef_construction = 64)"
+            )
+        )
+        await conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS idx_chunks_document_id "
+                "ON document_chunks(document_id)"
+            )
+        )
+        await conn.execute(
+            text(
+                "CREATE INDEX IF NOT EXISTS idx_documents_status "
+                "ON documents(status) WHERE is_active = true"
+            )
+        )
     logger.info("database_initialized")
 
 

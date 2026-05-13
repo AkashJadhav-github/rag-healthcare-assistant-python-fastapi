@@ -32,7 +32,10 @@ class AuditLog(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     action = Column(Enum(AuditAction), nullable=False, index=True)
     resource_type = Column(String(100))
@@ -44,7 +47,9 @@ class AuditLog(Base):
     status_code = Column(String(10))
     details = Column(JSON, default={})
     error_message = Column(Text)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(
+        DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True
+    )
 
     user = relationship("User", back_populates="audit_logs")
 

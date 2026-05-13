@@ -34,7 +34,12 @@ logger = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("startup", app=settings.APP_NAME, version=settings.APP_VERSION, env=settings.ENVIRONMENT)
+    logger.info(
+        "startup",
+        app=settings.APP_NAME,
+        version=settings.APP_VERSION,
+        env=settings.ENVIRONMENT,
+    )
     await init_db()
     logger.info("database_ready")
 
@@ -134,4 +139,8 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/", tags=["Root"])
 async def root():
-    return {"name": settings.APP_NAME, "version": settings.APP_VERSION, "status": "running"}
+    return {
+        "name": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+        "status": "running",
+    }

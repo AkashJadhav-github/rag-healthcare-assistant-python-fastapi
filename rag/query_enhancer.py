@@ -125,14 +125,17 @@ class MedicalQueryEnhancer:
         """Split compound questions for multi-hop retrieval."""
         sub_queries = [query]
         connectors = re.split(
-            r"\s+(and|also|additionally|furthermore|what about)\s+", query, flags=re.IGNORECASE
+            r"\s+(and|also|additionally|furthermore|what about)\s+",
+            query,
+            flags=re.IGNORECASE,
         )
         if len(connectors) > 1:
             sub_queries = [
                 q.strip()
                 for q in connectors
                 if len(q.strip()) > 10
-                and q.lower() not in ("and", "also", "additionally", "furthermore", "what about")
+                and q.lower()
+                not in ("and", "also", "additionally", "furthermore", "what about")
             ]
         return sub_queries or [query]
 

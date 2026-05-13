@@ -2,6 +2,7 @@ import pytest
 import pytest_asyncio
 from unittest.mock import patch
 from app.models.user import User, UserRole
+from app.core.security import create_refresh_token
 from httpx import AsyncClient
 
 
@@ -71,3 +72,26 @@ async def test_logout(client: AsyncClient, admin_token: str):
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_refresh_token(client: AsyncClient, admin_user: User):
+    refresh_tok = create_refresh_token(subject=str(admin_user.id))
+    response = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": refresh_tok},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+    assert data["expires_in"] == 1800
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_invalid(client: AsyncClient):
+    response = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": "this.is.not.a.valid.token"},
+    )
+    assert response.status_code == 401

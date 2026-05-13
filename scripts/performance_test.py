@@ -5,6 +5,7 @@ Run: python scripts/performance_test.py
 Requires: pip install locust
 Or run directly to simulate N concurrent asyncio tasks.
 """
+
 import asyncio
 import httpx
 import time
@@ -41,22 +42,36 @@ async def single_request(client: httpx.AsyncClient, token: str, query: str) -> d
             timeout=10,
         )
         latency = (time.time() - start) * 1000
-        return {"success": r.status_code == 200, "latency_ms": latency, "status": r.status_code}
+        return {
+            "success": r.status_code == 200,
+            "latency_ms": latency,
+            "status": r.status_code,
+        }
     except Exception as e:
-        return {"success": False, "latency_ms": (time.time() - start) * 1000, "error": str(e)}
+        return {
+            "success": False,
+            "latency_ms": (time.time() - start) * 1000,
+            "error": str(e),
+        }
 
 
 async def main():
-    print(f"Performance test: {TOTAL_REQUESTS} requests, {CONCURRENT_USERS} concurrent users")
+    print(
+        f"Performance test: {TOTAL_REQUESTS} requests, {CONCURRENT_USERS} concurrent users"
+    )
     print(f"Target: {API_BASE}")
 
     async with httpx.AsyncClient(base_url=API_BASE, timeout=30) as client:
-        r = await client.post("/auth/login", data={"username": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
+        r = await client.post(
+            "/auth/login", data={"username": ADMIN_EMAIL, "password": ADMIN_PASSWORD}
+        )
         r.raise_for_status()
         token = r.json()["access_token"]
         print(f"Authenticated as {ADMIN_EMAIL}\n")
 
-        queries = [SAMPLE_QUERIES[i % len(SAMPLE_QUERIES)] for i in range(TOTAL_REQUESTS)]
+        queries = [
+            SAMPLE_QUERIES[i % len(SAMPLE_QUERIES)] for i in range(TOTAL_REQUESTS)
+        ]
         semaphore = asyncio.Semaphore(CONCURRENT_USERS)
 
         async def bounded_request(query):
@@ -73,18 +88,20 @@ async def main():
 
     print("=" * 60)
     print(f"Total requests   : {TOTAL_REQUESTS}")
-    print(f"Successful       : {len(successful)} ({len(successful)/TOTAL_REQUESTS*100:.1f}%)")
+    print(
+        f"Successful       : {len(successful)} ({len(successful) / TOTAL_REQUESTS * 100:.1f}%)"
+    )
     print(f"Failed           : {len(failed)}")
     print(f"Total time       : {total_time:.2f}s")
-    print(f"Throughput       : {TOTAL_REQUESTS/total_time:.1f} req/s")
+    print(f"Throughput       : {TOTAL_REQUESTS / total_time:.1f} req/s")
 
     if latencies:
-        print(f"\nLatency (ms):")
+        print("\nLatency (ms):")
         print(f"  min p50    : {statistics.median(latencies):.0f}")
-        print(f"  p95        : {sorted(latencies)[int(len(latencies)*0.95)]:.0f}")
-        print(f"  p99        : {sorted(latencies)[int(len(latencies)*0.99)]:.0f}")
+        print(f"  p95        : {sorted(latencies)[int(len(latencies) * 0.95)]:.0f}")
+        print(f"  p99        : {sorted(latencies)[int(len(latencies) * 0.99)]:.0f}")
         print(f"  max        : {max(latencies):.0f}")
-        p95 = sorted(latencies)[int(len(latencies)*0.95)]
+        p95 = sorted(latencies)[int(len(latencies) * 0.95)]
         print(f"\nSLA check (p95 < 2000ms): {'✓ PASS' if p95 < 2000 else '✗ FAIL'}")
 
 

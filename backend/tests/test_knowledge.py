@@ -7,7 +7,9 @@ from httpx import AsyncClient
 
 @pytest.mark.asyncio
 async def test_ask_requires_auth(client: AsyncClient):
-    response = await client.post("/api/v1/knowledge/ask", json={"query": "What is hypertension?"})
+    response = await client.post(
+        "/api/v1/knowledge/ask", json={"query": "What is hypertension?"}
+    )
     assert response.status_code == 403
 
 
@@ -23,7 +25,9 @@ async def test_ask_too_short_query(client: AsyncClient, clinician_token: str):
 
 @pytest.mark.asyncio
 @patch("rag.pipeline.RAGPipeline")
-async def test_ask_success(mock_pipeline_class, client: AsyncClient, clinician_token: str):
+async def test_ask_success(
+    mock_pipeline_class, client: AsyncClient, clinician_token: str
+):
     mock_pipeline = MagicMock()
     mock_pipeline.query = AsyncMock(
         return_value={
@@ -82,7 +86,37 @@ async def test_ingest_requires_permission(client: AsyncClient, admin_token: str)
 async def test_ingest_unsupported_format(client: AsyncClient, admin_token: str):
     response = await client.post(
         "/api/v1/knowledge/ingest",
-        files={"file": ("test.exe", io.BytesIO(b"\x4d\x5a"), "application/octet-stream")},
+        files={
+            "file": ("test.exe", io.BytesIO(b"\x4d\x5a"), "application/octet-stream")
+        },
         headers={"Authorization": f"Bearer {admin_token}"},
     )
     assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_delete_document_not_found(client: AsyncClient, admin_token: str):
+    """DELETE a non-existent document UUID should return 404."""
+    fake_id = "00000000-0000-0000-0000-000000000000"
+    response = await client.delete(
+        f"/api/v1/knowledge/documents/{fake_id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_retention_stats(client: AsyncClient, admin_token: str):
+    """GET /admin/retention/stats with admin token should return 200 with expected shape."""
+    response = await client.get(
+        "/api/v1/admin/retention/stats",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert "audit_logs" in data
+    assert "query_logs" in data
+    assert "policy_applied_at" in data
+    assert "total" in data["audit_logs"]
+    assert "expired" in data["audit_logs"]
+    assert "retention_days" in data["audit_logs"]

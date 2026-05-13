@@ -6,7 +6,7 @@ Supports OpenAI GPT-4 and Anthropic Claude with few-shot examples.
 import os
 import sys
 import time
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 import structlog
 
@@ -51,22 +51,24 @@ FEW_SHOT_EXAMPLES = [
 
 
 class LLMGenerator:
-    def __init__(self):
-        self._openai_client = None
-        self._anthropic_client = None
+    def __init__(self) -> None:
+        self._openai_client: Any = None
+        self._anthropic_client: Any = None
 
-    def _get_openai(self):
+    def _get_openai(self) -> Any:
         if self._openai_client is None:
             from openai import AsyncOpenAI
 
             self._openai_client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         return self._openai_client
 
-    def _get_anthropic(self):
+    def _get_anthropic(self) -> Any:
         if self._anthropic_client is None:
             import anthropic
 
-            self._anthropic_client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+            self._anthropic_client = anthropic.AsyncAnthropic(
+                api_key=settings.ANTHROPIC_API_KEY
+            )
         return self._anthropic_client
 
     def _build_context(self, sources: List[Dict[str, Any]]) -> str:
@@ -87,13 +89,18 @@ class LLMGenerator:
             parts.append(f"{header}\n{content}")
         return "\n\n---\n\n".join(parts)
 
-    def _build_messages(self, query: str, sources: List[Dict[str, Any]]) -> List[Dict[str, str]]:
+    def _build_messages(
+        self, query: str, sources: List[Dict[str, Any]]
+    ) -> List[Dict[str, str]]:
         context = self._build_context(sources)
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
         for ex in FEW_SHOT_EXAMPLES:
             messages.append(
-                {"role": "user", "content": f"Context:\n{ex['context']}\n\nQuestion: {ex['query']}"}
+                {
+                    "role": "user",
+                    "content": f"Context:\n{ex['context']}\n\nQuestion: {ex['query']}",
+                }
             )
             messages.append({"role": "assistant", "content": ex["answer"]})
 
@@ -105,7 +112,9 @@ class LLMGenerator:
         )
         return messages
 
-    def _build_system_with_history(self, conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
+    def _build_system_with_history(
+        self, conversation_history: Optional[List[Dict[str, str]]] = None
+    ) -> str:
         """Return the system prompt, optionally prepending prior session exchanges."""
         if not conversation_history:
             return SYSTEM_PROMPT
@@ -179,7 +188,9 @@ class LLMGenerator:
         else:
             yield self._fallback_answer(query, sources)
 
-    async def _openai_stream(self, messages: List[Dict], max_tokens: int) -> AsyncGenerator[str, None]:
+    async def _openai_stream(
+        self, messages: List[Dict[str, Any]], max_tokens: int
+    ) -> AsyncGenerator[str, None]:
         client = self._get_openai()
         stream = await client.chat.completions.create(
             model=settings.OPENAI_LLM_MODEL,
@@ -193,7 +204,9 @@ class LLMGenerator:
             if delta:
                 yield delta
 
-    async def _anthropic_stream(self, messages: List[Dict], max_tokens: int) -> AsyncGenerator[str, None]:
+    async def _anthropic_stream(
+        self, messages: List[Dict[str, Any]], max_tokens: int
+    ) -> AsyncGenerator[str, None]:
         client = self._get_anthropic()
         system = next((m["content"] for m in messages if m["role"] == "system"), "")
         user_messages = [m for m in messages if m["role"] != "system"]
@@ -207,7 +220,9 @@ class LLMGenerator:
             async for text in stream.text_stream:
                 yield text
 
-    async def _openai_generate(self, messages: List[Dict], max_tokens: int) -> tuple[str, str]:
+    async def _openai_generate(
+        self, messages: List[Dict[str, Any]], max_tokens: int
+    ) -> Tuple[str, str]:
         client = self._get_openai()
         response = await client.chat.completions.create(
             model=settings.OPENAI_LLM_MODEL,
@@ -217,7 +232,9 @@ class LLMGenerator:
         )
         return response.choices[0].message.content, settings.OPENAI_LLM_MODEL
 
-    async def _anthropic_generate(self, messages: List[Dict], max_tokens: int) -> tuple[str, str]:
+    async def _anthropic_generate(
+        self, messages: List[Dict[str, Any]], max_tokens: int
+    ) -> Tuple[str, str]:
         client = self._get_anthropic()
         system = next((m["content"] for m in messages if m["role"] == "system"), "")
         user_messages = [m for m in messages if m["role"] != "system"]
