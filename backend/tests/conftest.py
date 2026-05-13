@@ -2,8 +2,8 @@ import os
 from typing import AsyncGenerator
 
 import pytest_asyncio
-from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
@@ -51,9 +51,9 @@ def _ensure_test_db() -> None:
     if os.getenv("TEST_DATABASE_URL"):
         return
 
-    import asyncio
+    import asyncio  # noqa: PLC0415,E402
 
-    import asyncpg
+    import asyncpg  # noqa: PLC0415,E402
 
     async def _create():
         # Connect to the always-available default postgres database

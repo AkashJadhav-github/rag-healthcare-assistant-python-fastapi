@@ -4,12 +4,11 @@ from typing import Dict
 import structlog
 from fastapi import APIRouter
 from fastapi.responses import Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel
 
 from ...db.database import check_db_health
 from ...services.cache import cache_service
-from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-
 from ...services.metrics import registry
 
 logger = structlog.get_logger()

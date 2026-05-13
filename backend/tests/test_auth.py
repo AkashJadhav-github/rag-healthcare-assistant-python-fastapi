@@ -1,9 +1,11 @@
+from unittest.mock import patch
+
 import pytest
 import pytest_asyncio
-from unittest.mock import patch
-from app.models.user import User, UserRole
-from app.core.security import create_refresh_token
 from httpx import AsyncClient
+
+from app.core.security import create_refresh_token
+from app.models.user import User, UserRole
 
 
 @pytest_asyncio.fixture(autouse=True)
