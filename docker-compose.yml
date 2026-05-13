@@ -29,6 +29,8 @@ services:
       - VECTOR_DIMENSION=384
       - ANTHROPIC_MODEL=claude-sonnet-4-6
       - SIMILARITY_THRESHOLD=0.1
+      - CHUNK_SIZE=400
+      - CHUNK_OVERLAP=80
     volumes:
       - ./backend:/app
       - ./rag:/app/rag

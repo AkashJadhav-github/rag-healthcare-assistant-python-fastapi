@@ -34,7 +34,7 @@ class MedicalTextChunker:
         re.IGNORECASE | re.MULTILINE,
     )
 
-    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200, model: str = "cl100k_base"):
+    def __init__(self, chunk_size: int = 400, chunk_overlap: int = 80, model: str = "cl100k_base"):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         try:
@@ -48,10 +48,19 @@ class MedicalTextChunker:
         return len(text) // 4
 
     def _split_into_sentences(self, text: str) -> List[str]:
-        """Split on sentence-ending punctuation, preserving medical abbreviations."""
+        """Split on sentence boundaries and paragraph/line breaks for medical text."""
         text = re.sub(r"\n{3,}", "\n\n", text)
-        sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z])", text)
-        return [s.strip() for s in sentences if s.strip()]
+        # First split on paragraph breaks
+        paragraphs = re.split(r"\n{2,}", text)
+        sentences = []
+        for para in paragraphs:
+            # Within each paragraph, split on sentence-ending punctuation
+            parts = re.split(r"(?<=[.!?])\s+(?=[A-Z])", para)
+            # Also split on newlines (for bullet lists, numbered items)
+            for part in parts:
+                lines = [l.strip() for l in part.split("\n") if l.strip()]
+                sentences.extend(lines)
+        return sentences
 
     def _detect_section(self, text: str) -> Optional[str]:
         match = self.SECTION_HEADERS.search(text[:200])
